@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Train Log</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- Auth Screen -->
+  <div id="auth-screen">
+    <div id="auth-box">
+      <h1 class="auth-logo">TRAIN LOG</h1>
+      <p class="auth-sub">Track your lifting and BJJ sessions across all your devices.</p>
+      <button id="google-signin-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
+        Sign in with Google
+      </button>
+      <p class="auth-note">Your data syncs across phone, tablet, and desktop.</p>
+    </div>
+  </div>
+
+  <!-- App Shell -->
+  <div id="app" class="hidden">
+
+    <!-- Header -->
+    <header id="header">
+      <div class="header-inner">
+        <button id="back-btn" class="back-btn hidden" aria-label="Go back">&#8592;</button>
+        <h1 id="page-title">TRAIN LOG</h1>
+        <button id="user-btn" class="user-btn" onclick="window.showUserMenu()">⊙</button>
+      </div>
+    </header>
+
+    <!-- User Menu -->
+    <div id="user-menu" class="user-menu hidden">
+      <div id="user-menu-name" class="user-menu-name"></div>
+      <div id="user-menu-email" class="user-menu-email"></div>
+      <button class="user-menu-signout" onclick="window.signOut()">Sign out</button>
+    </div>
+    <div id="user-menu-overlay" class="user-menu-overlay hidden" onclick="window.hideUserMenu()"></div>
+
+    <!-- Views -->
+    <main id="main">
+
+      <!-- Dashboard -->
+      <section id="view-dashboard" class="view active">
+        <div class="dashboard-hero">
+          <p class="greeting" id="greeting"></p>
+          <p class="subgreeting">Ready to put in work?</p>
+        </div>
+        <div class="action-cards">
+          <button class="action-card lifting" onclick="window.navigate('log-lifting')">
+            <span class="card-icon">🏋️</span>
+            <span class="card-label">Log Lifting</span>
+            <span class="card-sub">Sets · Reps · Weight</span>
+          </button>
+          <button class="action-card bjj" onclick="window.navigate('log-bjj')">
+            <span class="card-icon">🥋</span>
+            <span class="card-label">Log BJJ</span>
+            <span class="card-sub">Duration · Techniques</span>
+          </button>
+        </div>
+        <div class="section-header">
+          <h2>Recent Sessions</h2>
+          <button class="text-btn" onclick="window.navigate('history')">See all</button>
+        </div>
+        <div id="recent-sessions" class="session-list">
+          <div class="loading-state">Loading...</div>
+        </div>
+      </section>
+
+      <!-- Log Lifting -->
+      <section id="view-log-lifting" class="view">
+        <div class="form-section">
+          <label class="field-label">Date</label>
+          <input type="date" id="lifting-date" class="field-input" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Exercises</label>
+          <div id="exercise-list"></div>
+          <button class="add-btn" onclick="window.addExerciseRow()">+ Add Exercise</button>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Session Notes (optional)</label>
+          <textarea id="lifting-notes" class="field-input field-textarea" placeholder="How did it feel?"></textarea>
+        </div>
+        <button class="save-btn" id="save-lifting-btn" onclick="window.saveLifting()">Save Session</button>
+      </section>
+
+      <!-- Log BJJ -->
+      <section id="view-log-bjj" class="view">
+        <div class="form-section">
+          <label class="field-label">Date</label>
+          <input type="date" id="bjj-date" class="field-input" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Duration (minutes)</label>
+          <input type="number" id="bjj-duration" class="field-input" placeholder="e.g. 90" min="1" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Session Type</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-value="both" onclick="window.selectToggle(this, 'bjj-type')">Both</button>
+            <button class="toggle-btn" data-value="drilling" onclick="window.selectToggle(this, 'bjj-type')">Drilling</button>
+            <button class="toggle-btn" data-value="sparring" onclick="window.selectToggle(this, 'bjj-type')">Sparring</button>
+          </div>
+          <input type="hidden" id="bjj-type" value="both" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Techniques Worked On</label>
+          <div id="technique-list"></div>
+          <button class="add-btn" onclick="window.addTechniqueRow()">+ Add Technique</button>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Notes</label>
+          <textarea id="bjj-notes" class="field-input field-textarea" placeholder="What clicked today? What needs work?"></textarea>
+        </div>
+        <button class="save-btn" id="save-bjj-btn" onclick="window.saveBJJ()">Save Session</button>
+      </section>
+
+      <!-- History -->
+      <section id="view-history" class="view">
+        <div class="filter-row">
+          <button class="filter-btn active" data-filter="all" onclick="window.filterHistory(this)">All</button>
+          <button class="filter-btn" data-filter="lifting" onclick="window.filterHistory(this)">Lifting</button>
+          <button class="filter-btn" data-filter="bjj" onclick="window.filterHistory(this)">BJJ</button>
+        </div>
+        <div id="history-list" class="session-list">
+          <div class="loading-state">Loading...</div>
+        </div>
+      </section>
+
+      <!-- Session Detail -->
+      <section id="view-detail" class="view">
+        <div id="detail-content"></div>
+        <button class="delete-btn" id="delete-session-btn">Delete Session</button>
+      </section>
+
+      <!-- Progress -->
+      <section id="view-progress" class="view">
+        <div class="form-section">
+          <label class="field-label">Track Exercise</label>
+          <select id="progress-exercise" class="field-input" onchange="window.renderProgress()">
+            <option value="">Select an exercise...</option>
+          </select>
+        </div>
+        <div id="progress-content"></div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav id="bottom-nav">
+      <button class="nav-btn active" data-view="dashboard" onclick="window.navigate('dashboard')">
+        <span class="nav-icon">⊞</span>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-btn" data-view="history" onclick="window.navigate('history')">
+        <span class="nav-icon">☰</span>
+        <span class="nav-label">History</span>
+      </button>
+      <button class="nav-btn" data-view="progress" onclick="window.navigate('progress')">
+        <span class="nav-icon">↗</span>
+        <span class="nav-label">Progress</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Firebase + App (ES Modules) -->
+  <script type="module" src="js/firebase.js"></script>
+</body>
+</html>
