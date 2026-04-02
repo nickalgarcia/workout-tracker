@@ -1,0 +1,16 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.local
+config.js
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Editor
+.vscode/
+*.code-workspace
