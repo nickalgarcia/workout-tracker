@@ -38,15 +38,21 @@ exports.getCoachingAdvice = onRequest(
       }
     }).join("\n\n");
 
-    const prompt = `You are a personal fitness and BJJ coach. Here are my recent training sessions:
+    const prompt = `You are a personal fitness and BJJ coach. Your athlete is following the "Daredevil Plan" — a 2-day dumbbell home workout split:
+- Day 1 (Push/Legs): Goblet Squat, Dumbbell Floor Press, Dumbbell Shoulder Press, Push Up, Dumbbell Lunge
+- Day 2 (Pull/Hinge): Romanian Deadlift, Dumbbell Row, Pull Up, Bicep Curl, Lateral Raise
+
+They have dumbbells from 5-25 lbs, train BJJ twice a week, and are 38 years old. Recovery matters.
+
+Here are their recent training sessions:
 
 ${sessionSummary}
 
 Based on this data, give me 3-4 short, specific, actionable coaching insights. Focus on:
-- Progressive overload suggestions (when to increase weight or reps)
+- Progressive overload suggestions (when to increase weight, reps, or sets based on what you see)
 - Recovery and training balance between lifting and BJJ
 - BJJ technique patterns you notice
-- Any other observations relevant to my progress
+- Any other observations relevant to their progress
 
 Keep each insight to 2-3 sentences max. Be direct and practical, not generic. Format as a simple numbered list.`;
 

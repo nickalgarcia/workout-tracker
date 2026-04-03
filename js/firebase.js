@@ -112,6 +112,90 @@ async function deleteSessionFromDB(id) {
   await deleteDoc(doc(db, 'users', currentUser.uid, 'sessions', id));
 }
 
+// ── Daredevil Training Plans ──
+const TRAINING_PLANS = {
+  day1: {
+    label: 'Day 1 — Push/Legs',
+    exercises: [
+      'Goblet Squat',
+      'Dumbbell Floor Press',
+      'Dumbbell Shoulder Press',
+      'Push Up',
+      'Dumbbell Lunge',
+    ]
+  },
+  day2: {
+    label: 'Day 2 — Pull/Hinge',
+    exercises: [
+      'Romanian Deadlift',
+      'Dumbbell Row',
+      'Pull Up',
+      'Bicep Curl',
+      'Lateral Raise',
+    ]
+  },
+  blank: {
+    label: 'Free Session',
+    exercises: []
+  }
+};
+
+window.selectPlan = (btn) => {
+  document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const plan = btn.dataset.plan;
+  document.getElementById('selected-plan').value = plan;
+  loadPlanExercises(plan);
+};
+
+function loadPlanExercises(planKey) {
+  const plan = TRAINING_PLANS[planKey];
+  const list = document.getElementById('exercise-list');
+  list.innerHTML = '';
+  exerciseRowCount = 0;
+
+  if (plan.exercises.length === 0) {
+    addExerciseRow();
+  } else {
+    plan.exercises.forEach(name => addExerciseRowWithName(name));
+  }
+}
+
+function addExerciseRowWithName(exerciseName) {
+  exerciseRowCount++;
+  const id = exerciseRowCount;
+  const list = document.getElementById('exercise-list');
+  const options = PRESET_EXERCISES.map(n =>
+    `<option value="${n}" ${n === exerciseName ? 'selected' : ''}>${n}</option>`
+  ).join('');
+  const row = document.createElement('div');
+  row.className = 'exercise-row';
+  row.id = `exercise-row-${id}`;
+  row.innerHTML = `
+    <div class="exercise-row-top">
+      <select class="exercise-select" id="exercise-select-${id}" onchange="window.handleExerciseSelect(${id})">
+        <option value="">Pick exercise...</option>
+        ${options}
+      </select>
+      <button class="yt-btn" onclick="window.openExerciseYT(${id})" title="Search YouTube">▶</button>
+      <button class="remove-btn" onclick="window.removeExerciseRow(${id})">✕</button>
+    </div>
+    <div id="custom-name-wrapper-${id}" style="display:none; margin-bottom:10px;">
+      <input type="text" class="exercise-name-input" id="custom-name-${id}" placeholder="Exercise name..." style="width:100%;" />
+    </div>
+    <div class="sets-grid">
+      <span>Set</span><span>Reps</span><span>Weight (lbs)</span><span></span>
+    </div>
+    <div id="sets-${id}"></div>
+    <button class="add-set-btn" onclick="window.addSetRow(${id})">+ Add Set</button>
+  `;
+  list.appendChild(row);
+  // Start with 3 sets for plan exercises
+  addSetRow(id);
+  addSetRow(id);
+  addSetRow(id);
+}
+
 // ── Lifting Module ──
 const PRESET_EXERCISES = [
   'Goblet Squat', 'Dumbbell Squat', 'Romanian Deadlift', 'Dumbbell Lunge',
@@ -131,7 +215,13 @@ function initLiftingForm() {
   document.getElementById('lifting-notes').value = '';
   document.getElementById('exercise-list').innerHTML = '';
   exerciseRowCount = 0;
-  addExerciseRow();
+
+  // Reset plan selector to Day 1
+  document.querySelectorAll('.plan-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.plan === 'day1');
+  });
+  document.getElementById('selected-plan').value = 'day1';
+  loadPlanExercises('day1');
 }
 
 window.addExerciseRow = () => {
@@ -240,13 +330,15 @@ window.saveLifting = async () => {
   const exercises = collectExercises();
   if (exercises.length === 0) { showToast('Add at least one exercise'); return; }
   const notes = document.getElementById('lifting-notes').value.trim();
+  const plan = document.getElementById('selected-plan').value;
+  const planLabel = TRAINING_PLANS[plan]?.label || 'Free Session';
 
   const btn = document.getElementById('save-lifting-btn');
   btn.textContent = 'Saving...';
   btn.disabled = true;
 
   try {
-    await saveSessionToDB({ type: 'lifting', date, exercises, notes });
+    await saveSessionToDB({ type: 'lifting', date, exercises, notes, plan, planLabel });
     showToast('Session saved! 💪');
     navigate('dashboard');
   } catch (e) {
@@ -344,7 +436,7 @@ window.saveBJJ = async () => {
 };
 
 // ── App / Navigation ──
-const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress'];
+const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress', 'coach'];
 let viewHistory = ['dashboard'];
 
 window.navigate = async (viewName) => {
@@ -364,7 +456,8 @@ window.navigate = async (viewName) => {
   const titles = {
     'dashboard': 'TRAIN LOG', 'log-lifting': 'LOG LIFTING',
     'log-bjj': 'LOG BJJ', 'history': 'HISTORY',
-    'detail': 'SESSION', 'progress': 'PROGRESS'
+    'detail': 'SESSION', 'progress': 'PROGRESS',
+    'coach': 'COACH'
   };
   document.getElementById('page-title').textContent = titles[viewName] || 'TRAIN LOG';
 
@@ -373,6 +466,7 @@ window.navigate = async (viewName) => {
   if (viewName === 'log-bjj') initBJJForm();
   if (viewName === 'history') await renderHistory('all');
   if (viewName === 'progress') await renderProgressView();
+  if (viewName === 'coach') initCoachView();
 };
 
 function goBack() {
@@ -432,7 +526,8 @@ function buildSessionCard(session) {
   const dateStr = formatDate(session.date);
   let summary = '';
   if (type === 'lifting') {
-    summary = (session.exercises || []).map(e => e.name).join(', ') || 'Lifting session';
+    const planLabel = session.planLabel ? `${session.planLabel} · ` : '';
+    summary = planLabel + ((session.exercises || []).map(e => e.name).join(', ') || 'Lifting session');
   } else {
     summary = `${session.duration} min · ${capitalize(session.sessionType)}`;
   }
@@ -522,6 +617,7 @@ function buildDetailHTML(session) {
   return `
     <div class="detail-header">
       <div class="detail-type ${type}">${type === 'bjj' ? 'BJJ' : 'Lifting'}</div>
+      ${session.planLabel ? `<div class="detail-plan-label">${session.planLabel}</div>` : ''}
       <div class="detail-date">${dateStr}</div>
     </div>
     ${body}
@@ -601,6 +697,81 @@ window.renderProgress = async () => {
       <tbody>${rows}</tbody>
     </table>
   `;
+};
+
+// ── Coach ──
+function initCoachView() {
+  const output = document.getElementById('coach-output');
+  output.innerHTML = '';
+  document.getElementById('get-advice-btn').disabled = false;
+  document.getElementById('get-advice-btn').textContent = 'Analyze My Training';
+}
+
+window.getCoachingAdvice = async () => {
+  const btn = document.getElementById('get-advice-btn');
+  const output = document.getElementById('coach-output');
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  output.innerHTML = '<div class="coach-loading"><div class="coach-spinner"></div><p>Claude is reviewing your sessions...</p></div>';
+
+  try {
+    // Get last 20 sessions to send as context
+    const sessions = await getSessionsFromDB('all');
+    const recent = sessions.slice(0, 20);
+
+    if (recent.length === 0) {
+      output.innerHTML = '<div class="coach-empty">Log some sessions first and your coach will have data to work with.</div>';
+      btn.disabled = false;
+      btn.textContent = 'Analyze My Training';
+      return;
+    }
+
+    const response = await fetch(
+      'https://us-central1-workout-tracker-c1205.cloudfunctions.net/getCoachingAdvice',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessions: recent })
+      }
+    );
+
+    if (!response.ok) throw new Error('Function call failed');
+
+    const data = await response.json();
+    const advice = data.advice || 'No advice returned.';
+
+    // Format numbered list nicely
+    const formatted = advice
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        const isNumbered = /^\d+\./.test(line.trim());
+        return isNumbered
+          ? `<div class="coach-insight">${line.trim()}</div>`
+          : `<div class="coach-insight-body">${line.trim()}</div>`;
+      })
+      .join('');
+
+    const sessionCount = recent.length;
+    const liftCount = recent.filter(s => s.type === 'lifting').length;
+    const bjjCount = recent.filter(s => s.type === 'bjj').length;
+
+    output.innerHTML = `
+      <div class="coach-meta">
+        Based on your last ${sessionCount} sessions —
+        ${liftCount} lifting, ${bjjCount} BJJ
+      </div>
+      <div class="coach-advice">${formatted}</div>
+      <button class="coach-refresh-btn" onclick="window.getCoachingAdvice()">↺ Refresh Analysis</button>
+    `;
+  } catch (e) {
+    console.error(e);
+    output.innerHTML = '<div class="coach-empty">Something went wrong. Check your connection and try again.</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyze My Training';
+  }
 };
 
 // ── Toast ──

@@ -76,6 +76,24 @@
       <!-- Log Lifting -->
       <section id="view-log-lifting" class="view">
         <div class="form-section">
+          <label class="field-label">Training Plan</label>
+          <div class="plan-selector">
+            <button class="plan-btn active" data-plan="day1" onclick="window.selectPlan(this)">
+              <span class="plan-btn-title">Day 1</span>
+              <span class="plan-btn-sub">Push · Legs</span>
+            </button>
+            <button class="plan-btn" data-plan="day2" onclick="window.selectPlan(this)">
+              <span class="plan-btn-title">Day 2</span>
+              <span class="plan-btn-sub">Pull · Hinge</span>
+            </button>
+            <button class="plan-btn" data-plan="blank" onclick="window.selectPlan(this)">
+              <span class="plan-btn-title">Free</span>
+              <span class="plan-btn-sub">Custom</span>
+            </button>
+          </div>
+          <input type="hidden" id="selected-plan" value="day1" />
+        </div>
+        <div class="form-section">
           <label class="field-label">Date</label>
           <input type="date" id="lifting-date" class="field-input" />
         </div>
