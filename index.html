@@ -153,7 +153,19 @@
 
     </main>
 
-    <!-- Bottom Nav -->
+      <!-- Coach -->
+      <section id="view-coach" class="view">
+        <div class="coach-intro">
+          <div class="coach-icon">◎</div>
+          <p class="coach-intro-text">Your AI coach analyzes your recent sessions and gives you personalized advice on progressive overload, recovery, and BJJ progress.</p>
+        </div>
+        <button class="coach-btn" id="get-advice-btn" onclick="window.getCoachingAdvice()">
+          Analyze My Training
+        </button>
+        <div id="coach-output"></div>
+      </section>
+
+      <!-- Bottom Nav -->
     <nav id="bottom-nav">
       <button class="nav-btn active" data-view="dashboard" onclick="window.navigate('dashboard')">
         <span class="nav-icon">⊞</span>
@@ -166,6 +178,10 @@
       <button class="nav-btn" data-view="progress" onclick="window.navigate('progress')">
         <span class="nav-icon">↗</span>
         <span class="nav-label">Progress</span>
+      </button>
+      <button class="nav-btn" data-view="coach" onclick="window.navigate('coach')">
+        <span class="nav-icon">◎</span>
+        <span class="nav-label">Coach</span>
       </button>
     </nav>
 

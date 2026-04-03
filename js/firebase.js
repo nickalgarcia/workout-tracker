@@ -148,6 +148,7 @@ window.addExerciseRow = () => {
         <option value="">Pick exercise...</option>
         ${options}
       </select>
+      <button class="yt-btn" onclick="window.openExerciseYT(${id})" title="Search YouTube">▶</button>
       <button class="remove-btn" onclick="window.removeExerciseRow(${id})">✕</button>
     </div>
     <div id="custom-name-wrapper-${id}" style="display:none; margin-bottom:10px;">
@@ -161,6 +162,14 @@ window.addExerciseRow = () => {
   `;
   list.appendChild(row);
   addSetRow(id);
+};
+
+window.openExerciseYT = (id) => {
+  const select = document.getElementById(`exercise-select-${id}`);
+  let name = select?.value || '';
+  if (name === '-- Custom --') name = document.getElementById(`custom-name-${id}`)?.value.trim() || '';
+  if (!name) { showToast('Pick an exercise first'); return; }
+  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' proper form tutorial')}`, '_blank');
 };
 
 window.handleExerciseSelect = (id) => {
@@ -271,19 +280,33 @@ window.selectToggle = (btn, hiddenId) => {
 window.addTechniqueRow = () => {
   const list = document.getElementById('technique-list');
   const row = document.createElement('div');
-  row.className = 'technique-row';
+  row.className = 'technique-row-wrapper';
   row.innerHTML = `
-    <input type="text" class="technique-input" placeholder="e.g. Rear naked choke, Guard pass, Hip escape..." />
-    <button class="remove-btn" onclick="window.removeTechniqueRow(this)">✕</button>
+    <div class="technique-row">
+      <input type="text" class="technique-input" placeholder="e.g. Rear naked choke, Guard pass, Hip escape..." />
+      <button class="yt-btn" onclick="window.openTechniqueYT(this)" title="Search YouTube">▶</button>
+      <button class="remove-btn" onclick="window.removeTechniqueRow(this)">✕</button>
+    </div>
+    <div class="technique-link-row">
+      <input type="url" class="technique-link-input" placeholder="Paste a video link to save (optional)" />
+    </div>
   `;
   list.appendChild(row);
   if (list.children.length > 1) row.querySelector('.technique-input').focus();
 };
 
+window.openTechniqueYT = (btn) => {
+  const input = btn.closest('.technique-row').querySelector('.technique-input');
+  const name = input?.value.trim() || '';
+  if (!name) { showToast('Enter a technique first'); return; }
+  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent('BJJ ' + name + ' tutorial')}`, '_blank');
+};
+
 window.removeTechniqueRow = (btn) => {
   const list = document.getElementById('technique-list');
-  if (list.children.length > 1) btn.closest('.technique-row').remove();
-  else btn.closest('.technique-row').querySelector('.technique-input').value = '';
+  const wrapper = btn.closest('.technique-row-wrapper');
+  if (list.children.length > 1) wrapper.remove();
+  else wrapper.querySelector('.technique-input').value = '';
 };
 
 window.saveBJJ = async () => {
@@ -293,8 +316,14 @@ window.saveBJJ = async () => {
   if (!duration) { showToast('Please enter duration'); return; }
 
   const sessionType = document.getElementById('bjj-type').value;
-  const techniques = Array.from(document.querySelectorAll('.technique-input'))
-    .map(i => i.value.trim()).filter(Boolean);
+  const techniques = Array.from(document.querySelectorAll('.technique-row-wrapper'))
+    .map(wrapper => {
+      const name = wrapper.querySelector('.technique-input')?.value.trim() || '';
+      const link = wrapper.querySelector('.technique-link-input')?.value.trim() || '';
+      if (!name) return null;
+      return link ? { name, link } : { name };
+    })
+    .filter(Boolean);
   const notes = document.getElementById('bjj-notes').value.trim();
 
   const btn = document.getElementById('save-bjj-btn');
@@ -444,9 +473,13 @@ function buildDetailHTML(session) {
           ${set.reps ? `<div>${set.reps} reps</div>` : ''}
           ${set.weight ? `<div>${set.weight} lbs</div>` : ''}
         </div>`).join('');
+      const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' proper form tutorial')}`;
       return `
         <div class="detail-exercise">
-          <div class="detail-exercise-name">${ex.name}</div>
+          <div class="detail-exercise-header">
+            <div class="detail-exercise-name">${ex.name}</div>
+            <a href="${ytUrl}" target="_blank" class="detail-yt-link" title="Watch on YouTube">▶ YouTube</a>
+          </div>
           <div class="detail-sets">${sets}</div>
         </div>`;
     }).join('');
@@ -458,7 +491,21 @@ function buildDetailHTML(session) {
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
   } else {
-    const techniques = (session.techniques || []).map(t => `<div class="detail-technique">${t}</div>`).join('');
+    const techniques = (session.techniques || []).map(t => {
+      const name = typeof t === 'string' ? t : t.name;
+      const link = typeof t === 'object' ? t.link : null;
+      const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent('BJJ ' + name + ' tutorial')}`;
+      return `
+        <div class="detail-technique">
+          <div class="detail-technique-header">
+            <span>${name}</span>
+            <div class="detail-technique-links">
+              ${link ? `<a href="${link}" target="_blank" class="detail-saved-link">📌 Saved</a>` : ''}
+              <a href="${ytUrl}" target="_blank" class="detail-yt-link">▶ YouTube</a>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
     body = `
       <div class="detail-section">
         <div class="detail-section-title">Details</div>

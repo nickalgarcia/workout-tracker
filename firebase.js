@@ -344,7 +344,7 @@ window.saveBJJ = async () => {
 };
 
 // ── App / Navigation ──
-const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress'];
+const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress', 'coach'];
 let viewHistory = ['dashboard'];
 
 window.navigate = async (viewName) => {
@@ -364,7 +364,8 @@ window.navigate = async (viewName) => {
   const titles = {
     'dashboard': 'TRAIN LOG', 'log-lifting': 'LOG LIFTING',
     'log-bjj': 'LOG BJJ', 'history': 'HISTORY',
-    'detail': 'SESSION', 'progress': 'PROGRESS'
+    'detail': 'SESSION', 'progress': 'PROGRESS',
+    'coach': 'COACH'
   };
   document.getElementById('page-title').textContent = titles[viewName] || 'TRAIN LOG';
 
@@ -373,6 +374,7 @@ window.navigate = async (viewName) => {
   if (viewName === 'log-bjj') initBJJForm();
   if (viewName === 'history') await renderHistory('all');
   if (viewName === 'progress') await renderProgressView();
+  if (viewName === 'coach') initCoachView();
 };
 
 function goBack() {
@@ -601,6 +603,81 @@ window.renderProgress = async () => {
       <tbody>${rows}</tbody>
     </table>
   `;
+};
+
+// ── Coach ──
+function initCoachView() {
+  const output = document.getElementById('coach-output');
+  output.innerHTML = '';
+  document.getElementById('get-advice-btn').disabled = false;
+  document.getElementById('get-advice-btn').textContent = 'Analyze My Training';
+}
+
+window.getCoachingAdvice = async () => {
+  const btn = document.getElementById('get-advice-btn');
+  const output = document.getElementById('coach-output');
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  output.innerHTML = '<div class="coach-loading"><div class="coach-spinner"></div><p>Claude is reviewing your sessions...</p></div>';
+
+  try {
+    // Get last 20 sessions to send as context
+    const sessions = await getSessionsFromDB('all');
+    const recent = sessions.slice(0, 20);
+
+    if (recent.length === 0) {
+      output.innerHTML = '<div class="coach-empty">Log some sessions first and your coach will have data to work with.</div>';
+      btn.disabled = false;
+      btn.textContent = 'Analyze My Training';
+      return;
+    }
+
+    const response = await fetch(
+      'https://us-central1-workout-tracker-c1205.cloudfunctions.net/getCoachingAdvice',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessions: recent })
+      }
+    );
+
+    if (!response.ok) throw new Error('Function call failed');
+
+    const data = await response.json();
+    const advice = data.advice || 'No advice returned.';
+
+    // Format numbered list nicely
+    const formatted = advice
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        const isNumbered = /^\d+\./.test(line.trim());
+        return isNumbered
+          ? `<div class="coach-insight">${line.trim()}</div>`
+          : `<div class="coach-insight-body">${line.trim()}</div>`;
+      })
+      .join('');
+
+    const sessionCount = recent.length;
+    const liftCount = recent.filter(s => s.type === 'lifting').length;
+    const bjjCount = recent.filter(s => s.type === 'bjj').length;
+
+    output.innerHTML = `
+      <div class="coach-meta">
+        Based on your last ${sessionCount} sessions —
+        ${liftCount} lifting, ${bjjCount} BJJ
+      </div>
+      <div class="coach-advice">${formatted}</div>
+      <button class="coach-refresh-btn" onclick="window.getCoachingAdvice()">↺ Refresh Analysis</button>
+    `;
+  } catch (e) {
+    console.error(e);
+    output.innerHTML = '<div class="coach-empty">Something went wrong. Check your connection and try again.</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyze My Training';
+  }
 };
 
 // ── Toast ──

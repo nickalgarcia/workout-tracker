@@ -768,6 +768,108 @@ select.field-input option { background: var(--surface2); }
 }
 .detail-saved-link:hover { background: var(--bjj-dim); }
 
+/* ── Coach ── */
+.coach-intro {
+  text-align: center;
+  padding: 24px 0 32px;
+}
+.coach-icon {
+  font-size: 48px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  line-height: 1;
+}
+.coach-intro-text {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.7;
+  max-width: 300px;
+  margin: 0 auto;
+}
+.coach-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #0f0f0f;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 16px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  margin-bottom: 24px;
+}
+.coach-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.coach-btn:not(:disabled):active { transform: scale(0.98); opacity: 0.9; }
+.coach-loading {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.coach-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.coach-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+.coach-advice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.coach-insight {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.coach-insight-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 0 4px;
+  line-height: 1.6;
+}
+.coach-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 32px 0;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+.coach-refresh-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.coach-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ── Toast ── */
 .toast {
   position: fixed;
