@@ -479,7 +479,8 @@ function goBack() {
 // ── Render Dashboard ──
 async function renderDashboard() {
   const h = new Date().getHours();
-  const greeting = h < 12 ? 'Good morning, Nick.' : h < 17 ? 'Good afternoon, Nick.' : 'Good evening, Nick.';
+  const firstName = currentUser?.displayName?.split(' ')[0] || 'there';
+  const greeting = h < 12 ? `Good morning, ${firstName}.` : h < 17 ? `Good afternoon, ${firstName}.` : `Good evening, ${firstName}.`;
   document.getElementById('greeting').textContent = greeting;
 
   const container = document.getElementById('recent-sessions');
