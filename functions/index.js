@@ -39,10 +39,10 @@ exports.getCoachingAdvice = onRequest(
     }).join("\n\n");
 
     const prompt = `You are a personal fitness and BJJ coach. Your athlete is following the "Daredevil Plan" — a 2-day dumbbell home workout split:
-- Day 1 (Push/Legs): Goblet Squat, Dumbbell Floor Press, Dumbbell Shoulder Press, Push Up, Dumbbell Lunge
-- Day 2 (Pull/Hinge): Romanian Deadlift, Dumbbell Row, Pull Up, Bicep Curl, Lateral Raise
+- Day 1 (Push/Legs): Goblet Squat, Dumbbell Floor Press, Dumbbell Shoulder Press, Push Up, Dumbbell Lunge, Overhead Tricep Extension, Dead Bug
+- Day 2 (Pull/Hinge): Romanian Deadlift, Dumbbell Row, Pull Up, Bicep Curl, Lateral Raise, Dumbbell Rear Delt Fly, Russian Twist
 
-They have dumbbells from 5-25 lbs, train BJJ twice a week, and are 38 years old. Recovery matters.
+They have dumbbells from 5-25 lbs, train BJJ twice a week, and are 38 years old. Recovery matters. Goals are increased strength and improved definition in arms, shoulders, and legs.
 
 Here are their recent training sessions:
 

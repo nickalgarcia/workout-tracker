@@ -122,6 +122,8 @@ const TRAINING_PLANS = {
       'Dumbbell Shoulder Press',
       'Push Up',
       'Dumbbell Lunge',
+      'Overhead Tricep Extension',
+      'Dead Bug',
     ]
   },
   day2: {
@@ -132,6 +134,8 @@ const TRAINING_PLANS = {
       'Pull Up',
       'Bicep Curl',
       'Lateral Raise',
+      'Dumbbell Rear Delt Fly',
+      'Russian Twist',
     ]
   },
   blank: {
@@ -479,8 +483,7 @@ function goBack() {
 // ── Render Dashboard ──
 async function renderDashboard() {
   const h = new Date().getHours();
-  const firstName = currentUser?.displayName?.split(' ')[0] || 'there';
-  const greeting = h < 12 ? `Good morning, ${firstName}.` : h < 17 ? `Good afternoon, ${firstName}.` : `Good evening, ${firstName}.`;
+  const greeting = h < 12 ? 'Good morning, Nick.' : h < 17 ? 'Good afternoon, Nick.' : 'Good evening, Nick.';
   document.getElementById('greeting').textContent = greeting;
 
   const container = document.getElementById('recent-sessions');
@@ -790,11 +793,7 @@ function showToast(message) {
 
 // ── Helpers ──
 function todayStr() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return new Date().toISOString().split('T')[0];
 }
 function formatDate(dateStr) {
   if (!dateStr) return '';
