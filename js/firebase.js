@@ -649,31 +649,8 @@ async function renderProgressView() {
   select.innerHTML = '<option value="">Select an exercise...</option>' +
     Array.from(names).sort().map(n => `<option value="${n}">${n}</option>`).join('');
 
-  // Show helpful guidance based on how many sessions exist
-  const sessionCount = sessions.length;
-  let message = '';
-
-  if (sessionCount === 0) {
-    message = `
-      <div class="progress-guidance">
-        <div class="progress-guidance-icon">📋</div>
-        <div class="progress-guidance-title">No lifting sessions yet</div>
-        <div class="progress-guidance-text">Log your first workout to start tracking progress. Your data will appear here after your first session.</div>
-      </div>`;
-  } else if (sessionCount < 3) {
-    const remaining = 3 - sessionCount;
-    message = `
-      <div class="progress-guidance">
-        <div class="progress-guidance-icon">📈</div>
-        <div class="progress-guidance-title">Keep going — you're ${sessionCount === 1 ? 'just getting started' : 'almost there'}!</div>
-        <div class="progress-guidance-text">Progress tracking becomes meaningful after <strong>3 sessions</strong> of the same exercise. Log ${remaining} more session${remaining > 1 ? 's' : ''} to start seeing trends.</div>
-        <div class="progress-guidance-tip">💡 You can still select an exercise above to see your starting point.</div>
-      </div>`;
-  } else {
-    message = `<div class="progress-empty">Select an exercise above to see your progress.</div>`;
-  }
-
-  document.getElementById('progress-content').innerHTML = message;
+  document.getElementById('progress-content').innerHTML =
+    `<div class="progress-empty">Select an exercise to see your progress.</div>`;
 }
 
 window.renderProgress = async () => {
