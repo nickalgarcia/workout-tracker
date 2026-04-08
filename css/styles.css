@@ -812,6 +812,42 @@ select.field-input option { background: var(--surface2); }
 }
 .detail-saved-link:hover { background: var(--bjj-dim); }
 
+/* ── Progress Guidance ── */
+.progress-guidance {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  text-align: center;
+  margin-top: 8px;
+}
+.progress-guidance-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+.progress-guidance-title {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.progress-guidance-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.progress-guidance-text strong { color: var(--accent); }
+.progress-guidance-tip {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+
 /* ── Coach ── */
 .coach-intro {
   text-align: center;
