@@ -109,14 +109,11 @@ async function saveSessionToDB(session) {
 
 // Get all sessions, newest first
 async function getSessionsFromDB(type = 'all') {
-  let q;
-  if (type === 'all') {
-    q = query(sessionsRef(), orderBy('createdAt', 'desc'));
-  } else {
-    q = query(sessionsRef(), where('type', '==', type), orderBy('createdAt', 'desc'));
-  }
+  const q = query(sessionsRef(), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (type === 'all') return all;
+  return all.filter(s => s.type === type);
 }
 
 // Delete a session
