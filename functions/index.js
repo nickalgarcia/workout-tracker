@@ -48,14 +48,20 @@ exports.getCoachingAdvice = onRequest(
           ).join(", ");
           return `  - ${ex.name}: ${sets}`;
         }).join("\n");
-        return `Lifting session on ${s.date}:\n${exercises}`;
-      } else {
+        return `Lifting session on ${s.date} (${s.planLabel || 'Free'}):\n${exercises}`;
+      } else if (s.type === "bjj") {
         const techniques = (s.techniques || []).map(t =>
           typeof t === "string" ? t : t.name
         ).join(", ");
         return `BJJ session on ${s.date}: ${s.duration} mins, ${s.sessionType}. Techniques: ${techniques || "none logged"}`;
+      } else if (s.type === "yoga") {
+        return `Yoga session on ${s.date}: ${s.duration} mins, ${s.style} style.${s.notes ? ' Notes: ' + s.notes : ''}`;
+      } else if (s.type === "cardio") {
+        const dist = s.distance ? `, ${s.distance} ${s.distanceUnit}` : '';
+        return `Cardio session on ${s.date}: ${s.duration} mins, ${s.cardioType}${dist}.${s.notes ? ' Notes: ' + s.notes : ''}`;
       }
-    }).join("\n\n");
+      return '';
+    }).filter(Boolean).join("\n\n");
 
     const prompt = `You are a personal fitness and BJJ coach. Here is your athlete's profile:
 

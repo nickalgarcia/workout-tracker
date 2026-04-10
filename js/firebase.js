@@ -636,13 +636,16 @@ window.navigate = async (viewName) => {
     'dashboard': 'TRAIN LOG', 'log-lifting': 'LOG LIFTING',
     'log-bjj': 'LOG BJJ', 'history': 'HISTORY',
     'detail': 'SESSION', 'progress': 'PROGRESS',
-    'coach': 'COACH', 'settings': 'SETTINGS'
+    'coach': 'COACH', 'settings': 'SETTINGS',
+    'log-yoga': 'LOG YOGA', 'log-cardio': 'LOG CARDIO'
   };
   document.getElementById('page-title').textContent = titles[viewName] || 'TRAIN LOG';
 
   if (viewName === 'dashboard') await renderDashboard();
   if (viewName === 'log-lifting') initLiftingForm();
   if (viewName === 'log-bjj') initBJJForm();
+  if (viewName === 'log-yoga') initYogaForm();
+  if (viewName === 'log-cardio') initCardioForm();
   if (viewName === 'history') await renderHistory('all');
   if (viewName === 'progress') await renderProgressView();
   if (viewName === 'coach') initCoachView();
@@ -707,16 +710,27 @@ function buildSessionCard(session) {
   const type = session.type;
   const dateStr = formatDate(session.date);
   let summary = '';
+  let typeLabel = type.toUpperCase();
+
   if (type === 'lifting') {
     const planLabel = session.planLabel ? `${session.planLabel} · ` : '';
     summary = planLabel + ((session.exercises || []).map(e => e.name).join(', ') || 'Lifting session');
-  } else {
+  } else if (type === 'bjj') {
     summary = `${session.duration} min · ${capitalize(session.sessionType)}`;
+  } else if (type === 'yoga') {
+    summary = `${session.duration} min · ${capitalize(session.style)}`;
+  } else if (type === 'cardio') {
+    const dist = session.distance ? ` · ${session.distance} ${session.distanceUnit}` : '';
+    summary = `${session.duration} min · ${capitalize(session.cardioType)}${dist}`;
   }
+
+  const typeColors = { lifting: 'lifting', bjj: 'bjj', yoga: 'yoga', cardio: 'cardio-type' };
+  const colorClass = typeColors[type] || 'lifting';
+
   return `
     <div class="session-card" onclick="window.openDetail('${session.id}')">
       <div class="session-card-left">
-        <span class="session-card-type ${type}">${type === 'bjj' ? 'BJJ' : 'Lifting'}</span>
+        <span class="session-card-type ${colorClass}">${typeLabel}</span>
         <span class="session-card-date">${dateStr}</span>
         <span class="session-card-summary">${summary}</span>
       </div>
@@ -767,7 +781,7 @@ function buildDetailHTML(session) {
       </div>
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
-  } else {
+  } else if (type === 'bjj') {
     const techniques = (session.techniques || []).map(t => {
       const name = typeof t === 'string' ? t : t.name;
       const link = typeof t === 'object' ? t.link : null;
@@ -794,11 +808,37 @@ function buildDetailHTML(session) {
       ${techniques ? `<div class="detail-section"><div class="detail-section-title">Techniques</div><div class="detail-technique-list">${techniques}</div></div>` : ''}
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
+  } else if (type === 'yoga') {
+    body = `
+      <div class="detail-section">
+        <div class="detail-section-title">Details</div>
+        <div class="detail-meta">
+          <div class="detail-meta-item"><span>Duration</span>${session.duration} min</div>
+          <div class="detail-meta-item"><span>Style</span>${capitalize(session.style)}</div>
+        </div>
+      </div>
+      ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
+    `;
+  } else if (type === 'cardio') {
+    body = `
+      <div class="detail-section">
+        <div class="detail-section-title">Details</div>
+        <div class="detail-meta">
+          <div class="detail-meta-item"><span>Duration</span>${session.duration} min</div>
+          <div class="detail-meta-item"><span>Type</span>${capitalize(session.cardioType)}</div>
+          ${session.distance ? `<div class="detail-meta-item"><span>Distance</span>${session.distance} ${session.distanceUnit}</div>` : ''}
+        </div>
+      </div>
+      ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
+    `;
   }
+
+  const typeLabels = { lifting: 'LIFTING', bjj: 'BJJ', yoga: 'YOGA', cardio: 'CARDIO' };
+  const typeColorClass = type;
 
   return `
     <div class="detail-header">
-      <div class="detail-type ${type}">${type === 'bjj' ? 'BJJ' : 'Lifting'}</div>
+      <div class="detail-type ${typeColorClass}">${typeLabels[type] || type.toUpperCase()}</div>
       ${session.planLabel ? `<div class="detail-plan-label">${session.planLabel}</div>` : ''}
       <div class="detail-date">${dateStr}</div>
     </div>
@@ -902,6 +942,87 @@ window.renderProgress = async () => {
       <tbody>${rows}</tbody>
     </table>
   `;
+};
+
+// ── Yoga Module ──
+function initYogaForm() {
+  document.getElementById('yoga-date').value = todayStr();
+  document.getElementById('yoga-duration').value = '';
+  document.getElementById('yoga-notes').value = '';
+  document.getElementById('yoga-style').value = 'vinyasa';
+  document.querySelectorAll('#view-log-yoga .toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === 'vinyasa');
+  });
+}
+
+window.saveYoga = async () => {
+  const date = document.getElementById('yoga-date').value;
+  if (!date) { showToast('Please select a date'); return; }
+  const duration = document.getElementById('yoga-duration').value;
+  if (!duration) { showToast('Please enter duration'); return; }
+  const style = document.getElementById('yoga-style').value;
+  const notes = document.getElementById('yoga-notes').value.trim();
+
+  const btn = document.getElementById('save-yoga-btn');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  try {
+    await saveSessionToDB({ type: 'yoga', date, duration: parseInt(duration), style, notes });
+    showToast('Yoga session logged! 🧘');
+    navigate('dashboard');
+  } catch (e) {
+    console.error(e);
+    showToast('Error saving. Try again.');
+  } finally {
+    btn.textContent = 'Save Session';
+    btn.disabled = false;
+  }
+};
+
+// ── Cardio Module ──
+function initCardioForm() {
+  document.getElementById('cardio-date').value = todayStr();
+  document.getElementById('cardio-duration').value = '';
+  document.getElementById('cardio-distance').value = '';
+  document.getElementById('cardio-notes').value = '';
+  document.getElementById('cardio-type').value = 'run';
+  document.querySelectorAll('#view-log-cardio .toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === 'run');
+  });
+}
+
+window.saveCardio = async () => {
+  const date = document.getElementById('cardio-date').value;
+  if (!date) { showToast('Please select a date'); return; }
+  const duration = document.getElementById('cardio-duration').value;
+  if (!duration) { showToast('Please enter duration'); return; }
+  const cardioType = document.getElementById('cardio-type').value;
+  const distance = document.getElementById('cardio-distance').value;
+  const distanceUnit = document.getElementById('cardio-distance-unit').value;
+  const notes = document.getElementById('cardio-notes').value.trim();
+
+  const btn = document.getElementById('save-cardio-btn');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  try {
+    await saveSessionToDB({
+      type: 'cardio',
+      date,
+      duration: parseInt(duration),
+      cardioType,
+      distance: distance ? parseFloat(distance) : null,
+      distanceUnit: distance ? distanceUnit : null,
+      notes
+    });
+    showToast('Cardio logged! 🏃');
+    navigate('dashboard');
+  } catch (e) {
+    console.error(e);
+    showToast('Error saving. Try again.');
+  } finally {
+    btn.textContent = 'Save Session';
+    btn.disabled = false;
+  }
 };
 
 // ── Coach ──

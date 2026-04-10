@@ -122,14 +122,24 @@
         </div>
         <div class="action-cards">
           <button class="action-card lifting" onclick="window.navigate('log-lifting')">
-            <span class="card-icon">&#127947;</span>
+            <span class="card-icon">🏋️</span>
             <span class="card-label">Log Lifting</span>
             <span class="card-sub">Sets · Reps · Weight</span>
           </button>
           <button class="action-card bjj" onclick="window.navigate('log-bjj')">
-            <span class="card-icon">&#129325;</span>
+            <span class="card-icon">🥋</span>
             <span class="card-label">Log BJJ</span>
             <span class="card-sub">Duration · Techniques</span>
+          </button>
+          <button class="action-card cardio" onclick="window.navigate('log-cardio')">
+            <span class="card-icon">🏃</span>
+            <span class="card-label">Log Cardio</span>
+            <span class="card-sub">Duration · Distance</span>
+          </button>
+          <button class="action-card yoga" onclick="window.navigate('log-yoga')">
+            <span class="card-icon">🧘</span>
+            <span class="card-label">Log Yoga</span>
+            <span class="card-sub">Duration · Style</span>
           </button>
         </div>
         <div class="section-header">
@@ -208,12 +218,81 @@
         <button class="save-btn" id="save-bjj-btn" onclick="window.saveBJJ()">Save Session</button>
       </section>
 
+      <!-- Log Yoga -->
+      <section id="view-log-yoga" class="view">
+        <div class="form-section">
+          <label class="field-label">Date</label>
+          <input type="date" id="yoga-date" class="field-input" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Duration (minutes)</label>
+          <input type="number" id="yoga-duration" class="field-input" placeholder="e.g. 45" min="1" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Style</label>
+          <div class="toggle-group style-toggle">
+            <button class="toggle-btn active" data-value="vinyasa" onclick="window.selectToggle(this, 'yoga-style')">Vinyasa</button>
+            <button class="toggle-btn" data-value="yin" onclick="window.selectToggle(this, 'yoga-style')">Yin</button>
+            <button class="toggle-btn" data-value="hatha" onclick="window.selectToggle(this, 'yoga-style')">Hatha</button>
+            <button class="toggle-btn" data-value="restorative" onclick="window.selectToggle(this, 'yoga-style')">Restore</button>
+            <button class="toggle-btn" data-value="other" onclick="window.selectToggle(this, 'yoga-style')">Other</button>
+          </div>
+          <input type="hidden" id="yoga-style" value="vinyasa" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Notes (optional)</label>
+          <textarea id="yoga-notes" class="field-input field-textarea" placeholder="How did it feel? Areas of focus?"></textarea>
+        </div>
+        <button class="save-btn" id="save-yoga-btn" onclick="window.saveYoga()">Save Session</button>
+      </section>
+
+      <!-- Log Cardio -->
+      <section id="view-log-cardio" class="view">
+        <div class="form-section">
+          <label class="field-label">Date</label>
+          <input type="date" id="cardio-date" class="field-input" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Duration (minutes)</label>
+          <input type="number" id="cardio-duration" class="field-input" placeholder="e.g. 30" min="1" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Type</label>
+          <div class="toggle-group style-toggle">
+            <button class="toggle-btn active" data-value="run" onclick="window.selectToggle(this, 'cardio-type')">Run</button>
+            <button class="toggle-btn" data-value="walk" onclick="window.selectToggle(this, 'cardio-type')">Walk</button>
+            <button class="toggle-btn" data-value="treadmill" onclick="window.selectToggle(this, 'cardio-type')">Treadmill</button>
+            <button class="toggle-btn" data-value="bike" onclick="window.selectToggle(this, 'cardio-type')">Bike</button>
+            <button class="toggle-btn" data-value="row" onclick="window.selectToggle(this, 'cardio-type')">Row</button>
+            <button class="toggle-btn" data-value="other" onclick="window.selectToggle(this, 'cardio-type')">Other</button>
+          </div>
+          <input type="hidden" id="cardio-type" value="run" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Distance (optional)</label>
+          <div class="distance-row">
+            <input type="number" id="cardio-distance" class="field-input" placeholder="e.g. 3.1" min="0" step="0.1" />
+            <select id="cardio-distance-unit" class="field-input distance-unit">
+              <option value="miles">miles</option>
+              <option value="km">km</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Notes (optional)</label>
+          <textarea id="cardio-notes" class="field-input field-textarea" placeholder="Route, pace, how it felt?"></textarea>
+        </div>
+        <button class="save-btn" id="save-cardio-btn" onclick="window.saveCardio()">Save Session</button>
+      </section>
+
       <!-- History -->
       <section id="view-history" class="view">
         <div class="filter-row">
           <button class="filter-btn active" data-filter="all" onclick="window.filterHistory(this)">All</button>
           <button class="filter-btn" data-filter="lifting" onclick="window.filterHistory(this)">Lifting</button>
           <button class="filter-btn" data-filter="bjj" onclick="window.filterHistory(this)">BJJ</button>
+          <button class="filter-btn" data-filter="cardio" onclick="window.filterHistory(this)">Cardio</button>
+          <button class="filter-btn" data-filter="yoga" onclick="window.filterHistory(this)">Yoga</button>
         </div>
         <div id="history-list" class="session-list">
           <div class="loading-state">Loading...</div>
