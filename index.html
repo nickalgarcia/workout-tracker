@@ -23,6 +23,73 @@
     </div>
   </div>
 
+  <!-- Onboarding Screen -->
+  <div id="onboarding-screen" class="hidden">
+    <div id="onboarding-box">
+      <div class="onboarding-header">
+        <h1 class="auth-logo">SET UP YOUR PROFILE</h1>
+        <p class="auth-sub">This helps your AI Coach give you personalized advice. You can update it anytime in Settings.</p>
+        <button class="onboarding-skip-btn" onclick="window.skipOnboarding()">Skip for now</button>
+      </div>
+      <div class="onboarding-form">
+        <div class="form-section">
+          <label class="field-label">Your First Name</label>
+          <input type="text" id="ob-name" class="field-input" placeholder="e.g. Nick" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Age</label>
+          <input type="number" id="ob-age" class="field-input" placeholder="e.g. 38" min="13" max="100" />
+        </div>
+        <div class="ob-row">
+          <div class="form-section">
+            <label class="field-label">Weight (lbs)</label>
+            <input type="number" id="ob-weight" class="field-input" placeholder="e.g. 150" />
+          </div>
+          <div class="form-section">
+            <label class="field-label">Height</label>
+            <input type="text" id="ob-height" class="field-input" placeholder="e.g. 5'8" />
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">What do you train?</label>
+          <div class="ob-checks" id="ob-activities">
+            <label class="ob-check"><input type="checkbox" value="lifting" /> Lifting</label>
+            <label class="ob-check"><input type="checkbox" value="bjj" /> BJJ</label>
+            <label class="ob-check"><input type="checkbox" value="cardio" /> Cardio</label>
+            <label class="ob-check"><input type="checkbox" value="yoga" /> Yoga</label>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Training days per week</label>
+          <div class="ob-days-grid" id="ob-days-grid">
+            <p class="ob-days-hint">Select your activities above first.</p>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Primary Goal</label>
+          <div class="ob-goal-grid">
+            <button class="ob-goal-btn" data-value="strength" onclick="window.selectGoal(this, 'ob-goal')">Strength</button>
+            <button class="ob-goal-btn" data-value="weight_loss" onclick="window.selectGoal(this, 'ob-goal')">Weight Loss</button>
+            <button class="ob-goal-btn" data-value="endurance" onclick="window.selectGoal(this, 'ob-goal')">Endurance</button>
+            <button class="ob-goal-btn" data-value="general" onclick="window.selectGoal(this, 'ob-goal')">General Fitness</button>
+          </div>
+          <input type="hidden" id="ob-goal" value="" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Equipment Available</label>
+          <div class="ob-checks" id="ob-equipment">
+            <label class="ob-check"><input type="checkbox" value="dumbbells" /> Dumbbells</label>
+            <label class="ob-check"><input type="checkbox" value="barbell" /> Barbell</label>
+            <label class="ob-check"><input type="checkbox" value="gym" /> Gym Membership</label>
+            <label class="ob-check"><input type="checkbox" value="bodyweight" /> Bodyweight Only</label>
+          </div>
+        </div>
+        <button class="save-btn" onclick="window.saveOnboarding()">Save Profile and Start Training</button>
+        <div style="height: 32px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- App Shell -->
   <div id="app" class="hidden">
 
@@ -31,7 +98,7 @@
       <div class="header-inner">
         <button id="back-btn" class="back-btn hidden" aria-label="Go back">&#8592;</button>
         <h1 id="page-title">TRAIN LOG</h1>
-        <button id="user-btn" class="user-btn" onclick="window.showUserMenu()">⊙</button>
+        <button id="user-btn" class="user-btn" onclick="window.showUserMenu()">&#9711;</button>
       </div>
     </header>
 
@@ -39,6 +106,7 @@
     <div id="user-menu" class="user-menu hidden">
       <div id="user-menu-name" class="user-menu-name"></div>
       <div id="user-menu-email" class="user-menu-email"></div>
+      <button class="user-menu-item" onclick="window.hideUserMenu(); window.navigate('settings');">Settings</button>
       <button class="user-menu-signout" onclick="window.signOut()">Sign out</button>
     </div>
     <div id="user-menu-overlay" class="user-menu-overlay hidden" onclick="window.hideUserMenu()"></div>
@@ -54,12 +122,12 @@
         </div>
         <div class="action-cards">
           <button class="action-card lifting" onclick="window.navigate('log-lifting')">
-            <span class="card-icon">🏋️</span>
+            <span class="card-icon">&#127947;</span>
             <span class="card-label">Log Lifting</span>
             <span class="card-sub">Sets · Reps · Weight</span>
           </button>
           <button class="action-card bjj" onclick="window.navigate('log-bjj')">
-            <span class="card-icon">🥋</span>
+            <span class="card-icon">&#129325;</span>
             <span class="card-label">Log BJJ</span>
             <span class="card-sub">Duration · Techniques</span>
           </button>
@@ -80,11 +148,11 @@
           <div class="plan-selector">
             <button class="plan-btn active" data-plan="day1" onclick="window.selectPlan(this)">
               <span class="plan-btn-title">Day 1</span>
-              <span class="plan-btn-sub">Push · Legs</span>
+              <span class="plan-btn-sub">Daredevil</span>
             </button>
             <button class="plan-btn" data-plan="day2" onclick="window.selectPlan(this)">
               <span class="plan-btn-title">Day 2</span>
-              <span class="plan-btn-sub">Pull · Hinge</span>
+              <span class="plan-btn-sub">Daredevil</span>
             </button>
             <button class="plan-btn" data-plan="blank" onclick="window.selectPlan(this)">
               <span class="plan-btn-title">Free</span>
@@ -169,13 +237,11 @@
         <div id="progress-content"></div>
       </section>
 
-    </main>
-
       <!-- Coach -->
       <section id="view-coach" class="view">
         <div class="coach-intro">
-          <div class="coach-icon">◎</div>
-          <p class="coach-intro-text">Your AI coach analyzes your recent sessions and gives you personalized advice on progressive overload, recovery, and BJJ progress.</p>
+          <div class="coach-icon">&#9676;</div>
+          <p class="coach-intro-text">Your AI coach analyzes your recent sessions and gives you personalized advice on progressive overload, recovery, and progress.</p>
         </div>
         <button class="coach-btn" id="get-advice-btn" onclick="window.getCoachingAdvice()">
           Analyze My Training
@@ -183,22 +249,85 @@
         <div id="coach-output"></div>
       </section>
 
-      <!-- Bottom Nav -->
+      <!-- Settings -->
+      <section id="view-settings" class="view">
+        <div class="settings-intro">
+          <p class="settings-intro-text">Update your profile so your AI Coach stays accurate as your training evolves.</p>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Your First Name</label>
+          <input type="text" id="set-name" class="field-input" placeholder="e.g. Nick" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Age</label>
+          <input type="number" id="set-age" class="field-input" placeholder="e.g. 38" />
+        </div>
+        <div class="ob-row">
+          <div class="form-section">
+            <label class="field-label">Weight (lbs)</label>
+            <input type="number" id="set-weight" class="field-input" placeholder="e.g. 150" />
+          </div>
+          <div class="form-section">
+            <label class="field-label">Height</label>
+            <input type="text" id="set-height" class="field-input" placeholder="e.g. 5'8" />
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">What do you train?</label>
+          <div class="ob-checks" id="set-activities">
+            <label class="ob-check"><input type="checkbox" value="lifting" /> Lifting</label>
+            <label class="ob-check"><input type="checkbox" value="bjj" /> BJJ</label>
+            <label class="ob-check"><input type="checkbox" value="cardio" /> Cardio</label>
+            <label class="ob-check"><input type="checkbox" value="yoga" /> Yoga</label>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Training days per week</label>
+          <div class="ob-days-grid" id="set-days-grid">
+            <p class="ob-days-hint">Select your activities above first.</p>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Primary Goal</label>
+          <div class="ob-goal-grid">
+            <button class="ob-goal-btn" data-value="strength" onclick="window.selectGoal(this, 'set-goal')">Strength</button>
+            <button class="ob-goal-btn" data-value="weight_loss" onclick="window.selectGoal(this, 'set-goal')">Weight Loss</button>
+            <button class="ob-goal-btn" data-value="endurance" onclick="window.selectGoal(this, 'set-goal')">Endurance</button>
+            <button class="ob-goal-btn" data-value="general" onclick="window.selectGoal(this, 'set-goal')">General Fitness</button>
+          </div>
+          <input type="hidden" id="set-goal" value="" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Equipment Available</label>
+          <div class="ob-checks" id="set-equipment">
+            <label class="ob-check"><input type="checkbox" value="dumbbells" /> Dumbbells</label>
+            <label class="ob-check"><input type="checkbox" value="barbell" /> Barbell</label>
+            <label class="ob-check"><input type="checkbox" value="gym" /> Gym Membership</label>
+            <label class="ob-check"><input type="checkbox" value="bodyweight" /> Bodyweight Only</label>
+          </div>
+        </div>
+        <button class="save-btn" onclick="window.saveSettings()">Save Settings</button>
+        <div style="height: 32px;"></div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Nav -->
     <nav id="bottom-nav">
       <button class="nav-btn active" data-view="dashboard" onclick="window.navigate('dashboard')">
-        <span class="nav-icon">⊞</span>
+        <span class="nav-icon">&#8862;</span>
         <span class="nav-label">Home</span>
       </button>
       <button class="nav-btn" data-view="history" onclick="window.navigate('history')">
-        <span class="nav-icon">☰</span>
+        <span class="nav-icon">&#9776;</span>
         <span class="nav-label">History</span>
       </button>
       <button class="nav-btn" data-view="progress" onclick="window.navigate('progress')">
-        <span class="nav-icon">↗</span>
+        <span class="nav-icon">&#8599;</span>
         <span class="nav-label">Progress</span>
       </button>
       <button class="nav-btn" data-view="coach" onclick="window.navigate('coach')">
-        <span class="nav-icon">◎</span>
+        <span class="nav-icon">&#9676;</span>
         <span class="nav-label">Coach</span>
       </button>
     </nav>

@@ -15,6 +15,8 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
   query,
   orderBy,
   where,
@@ -66,19 +68,29 @@ window.hideUserMenu = () => {
 };
 
 // Watch auth state
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   if (user) {
-    // Show app, hide auth screen
     document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    // Set user menu info
     document.getElementById('user-menu-name').textContent = user.displayName || '';
     document.getElementById('user-menu-email').textContent = user.email || '';
-    // Boot app
-    navigate('dashboard');
+
+    // Check if profile exists
+    const profile = await loadProfile();
+    if (!profile) {
+      // First time user — show onboarding
+      document.getElementById('onboarding-screen').classList.remove('hidden');
+      document.getElementById('app').classList.add('hidden');
+      initOnboardingActivityListeners();
+    } else {
+      // Returning user — go straight to app
+      document.getElementById('onboarding-screen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      navigate('dashboard');
+    }
   } else {
     document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('onboarding-screen').classList.add('hidden');
     document.getElementById('app').classList.add('hidden');
   }
 });
@@ -111,6 +123,169 @@ async function getSessionsFromDB(type = 'all') {
 async function deleteSessionFromDB(id) {
   await deleteDoc(doc(db, 'users', currentUser.uid, 'sessions', id));
 }
+
+// ── Profile Helpers ──
+function profileRef() {
+  return doc(db, 'users', currentUser.uid, 'meta', 'profile');
+}
+
+async function loadProfile() {
+  try {
+    const snap = await getDoc(profileRef());
+    return snap.exists() ? snap.data() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveProfileToDB(profile) {
+  await setDoc(profileRef(), profile);
+}
+
+// Cached profile for the session
+let userProfile = null;
+
+async function getProfile() {
+  if (!userProfile) userProfile = await loadProfile();
+  return userProfile;
+}
+
+// ── Onboarding ──
+function initOnboardingActivityListeners() {
+  const checkboxes = document.querySelectorAll('#ob-activities input[type="checkbox"]');
+  checkboxes.forEach(cb => cb.addEventListener('change', () => updateDaysGrid('ob-activities', 'ob-days-grid')));
+}
+
+function initSettingsActivityListeners() {
+  const checkboxes = document.querySelectorAll('#set-activities input[type="checkbox"]');
+  checkboxes.forEach(cb => cb.addEventListener('change', () => updateDaysGrid('set-activities', 'set-days-grid')));
+}
+
+function updateDaysGrid(activitiesId, gridId) {
+  const checked = Array.from(document.querySelectorAll(`#${activitiesId} input:checked`)).map(cb => cb.value);
+  const grid = document.getElementById(gridId);
+
+  if (checked.length === 0) {
+    grid.innerHTML = '<p class="ob-days-hint">Select your activities above first.</p>';
+    return;
+  }
+
+  const labels = { lifting: 'Lifting', bjj: 'BJJ', cardio: 'Cardio', yoga: 'Yoga' };
+  grid.innerHTML = checked.map(activity => `
+    <div class="ob-days-row">
+      <span class="ob-days-label">${labels[activity]}</span>
+      <select class="ob-days-select field-input" data-activity="${activity}">
+        ${[1,2,3,4,5,6,7].map(n => `<option value="${n}">${n}x / week</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+}
+
+function collectOnboardingData(prefix) {
+  const name = document.getElementById(`${prefix}-name`)?.value.trim() || '';
+  const age = document.getElementById(`${prefix}-age`)?.value || '';
+  const weight = document.getElementById(`${prefix}-weight`)?.value || '';
+  const height = document.getElementById(`${prefix}-height`)?.value.trim() || '';
+  const goal = document.getElementById(`${prefix}-goal`)?.value || '';
+
+  const activitiesId = prefix === 'ob' ? 'ob-activities' : 'set-activities';
+  const daysGridId = prefix === 'ob' ? 'ob-days-grid' : 'set-days-grid';
+  const equipmentId = prefix === 'ob' ? 'ob-equipment' : 'set-equipment';
+
+  const activities = Array.from(document.querySelectorAll(`#${activitiesId} input:checked`)).map(cb => cb.value);
+  const equipment = Array.from(document.querySelectorAll(`#${equipmentId} input:checked`)).map(cb => cb.value);
+
+  const trainingDays = {};
+  document.querySelectorAll(`#${daysGridId} .ob-days-select`).forEach(sel => {
+    trainingDays[sel.dataset.activity] = parseInt(sel.value);
+  });
+
+  return { name, age: parseInt(age) || null, weight: parseInt(weight) || null, height, goal, activities, equipment, trainingDays };
+}
+
+window.selectGoal = (btn, hiddenId) => {
+  btn.closest('.ob-goal-grid').querySelectorAll('.ob-goal-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(hiddenId).value = btn.dataset.value;
+};
+
+window.skipOnboarding = () => {
+  document.getElementById('onboarding-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  navigate('dashboard');
+};
+
+window.saveOnboarding = async () => {
+  const profile = collectOnboardingData('ob');
+  try {
+    await saveProfileToDB(profile);
+    userProfile = profile;
+    showToast('Profile saved!');
+    document.getElementById('onboarding-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    navigate('dashboard');
+  } catch (e) {
+    console.error(e);
+    showToast('Error saving profile. Try again.');
+  }
+};
+
+// ── Settings ──
+async function initSettingsView() {
+  const profile = await getProfile();
+  if (!profile) return;
+
+  if (profile.name) document.getElementById('set-name').value = profile.name;
+  if (profile.age) document.getElementById('set-age').value = profile.age;
+  if (profile.weight) document.getElementById('set-weight').value = profile.weight;
+  if (profile.height) document.getElementById('set-height').value = profile.height;
+  if (profile.goal) {
+    document.getElementById('set-goal').value = profile.goal;
+    document.querySelectorAll('#view-settings .ob-goal-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === profile.goal);
+    });
+  }
+
+  // Activities
+  if (profile.activities) {
+    document.querySelectorAll('#set-activities input').forEach(cb => {
+      cb.checked = profile.activities.includes(cb.value);
+    });
+    updateDaysGrid('set-activities', 'set-days-grid');
+    // Set saved days
+    if (profile.trainingDays) {
+      setTimeout(() => {
+        document.querySelectorAll('#set-days-grid .ob-days-select').forEach(sel => {
+          if (profile.trainingDays[sel.dataset.activity]) {
+            sel.value = profile.trainingDays[sel.dataset.activity];
+          }
+        });
+      }, 50);
+    }
+  }
+
+  // Equipment
+  if (profile.equipment) {
+    document.querySelectorAll('#set-equipment input').forEach(cb => {
+      cb.checked = profile.equipment.includes(cb.value);
+    });
+  }
+
+  initSettingsActivityListeners();
+}
+
+window.saveSettings = async () => {
+  const profile = collectOnboardingData('set');
+  try {
+    await saveProfileToDB(profile);
+    userProfile = profile;
+    showToast('Settings saved!');
+    navigate('dashboard');
+  } catch (e) {
+    console.error(e);
+    showToast('Error saving settings.');
+  }
+};
 
 // ── Daredevil Training Plans ──
 const TRAINING_PLANS = {
@@ -440,7 +615,7 @@ window.saveBJJ = async () => {
 };
 
 // ── App / Navigation ──
-const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress', 'coach'];
+const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress', 'coach', 'settings'];
 let viewHistory = ['dashboard'];
 
 window.navigate = async (viewName) => {
@@ -461,7 +636,7 @@ window.navigate = async (viewName) => {
     'dashboard': 'TRAIN LOG', 'log-lifting': 'LOG LIFTING',
     'log-bjj': 'LOG BJJ', 'history': 'HISTORY',
     'detail': 'SESSION', 'progress': 'PROGRESS',
-    'coach': 'COACH'
+    'coach': 'COACH', 'settings': 'SETTINGS'
   };
   document.getElementById('page-title').textContent = titles[viewName] || 'TRAIN LOG';
 
@@ -471,6 +646,7 @@ window.navigate = async (viewName) => {
   if (viewName === 'history') await renderHistory('all');
   if (viewName === 'progress') await renderProgressView();
   if (viewName === 'coach') initCoachView();
+  if (viewName === 'settings') await initSettingsView();
 };
 
 function goBack() {
@@ -483,7 +659,9 @@ function goBack() {
 // ── Render Dashboard ──
 async function renderDashboard() {
   const h = new Date().getHours();
-  const greeting = h < 12 ? 'Good morning, Nick.' : h < 17 ? 'Good afternoon, Nick.' : 'Good evening, Nick.';
+  const profile = await getProfile();
+  const firstName = profile?.name || currentUser?.displayName?.split(' ')[0] || 'there';
+  const greeting = h < 12 ? `Good morning, ${firstName}.` : h < 17 ? `Good afternoon, ${firstName}.` : `Good evening, ${firstName}.`;
   document.getElementById('greeting').textContent = greeting;
 
   const container = document.getElementById('recent-sessions');
@@ -649,6 +827,7 @@ async function renderProgressView() {
   select.innerHTML = '<option value="">Select an exercise...</option>' +
     Array.from(names).sort().map(n => `<option value="${n}">${n}</option>`).join('');
 
+  // Show helpful guidance based on how many sessions exist
   const sessionCount = sessions.length;
   let message = '';
 
@@ -742,9 +921,9 @@ window.getCoachingAdvice = async () => {
   output.innerHTML = '<div class="coach-loading"><div class="coach-spinner"></div><p>Claude is reviewing your sessions...</p></div>';
 
   try {
-    // Get last 20 sessions to send as context
     const sessions = await getSessionsFromDB('all');
     const recent = sessions.slice(0, 20);
+    const profile = await getProfile();
 
     if (recent.length === 0) {
       output.innerHTML = '<div class="coach-empty">Log some sessions first and your coach will have data to work with.</div>';
@@ -758,7 +937,7 @@ window.getCoachingAdvice = async () => {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessions: recent })
+        body: JSON.stringify({ sessions: recent, profile: profile || {} })
       }
     );
 

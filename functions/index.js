@@ -13,12 +13,31 @@ exports.getCoachingAdvice = onRequest(
       return;
     }
 
-    const { sessions } = req.body;
+    const { sessions, profile = {} } = req.body;
 
     if (!sessions || sessions.length === 0) {
       res.status(400).json({ error: "No session data provided" });
       return;
     }
+
+    // Build profile context
+    const profileLines = [];
+    if (profile.name) profileLines.push(`Name: ${profile.name}`);
+    if (profile.age) profileLines.push(`Age: ${profile.age}`);
+    if (profile.weight) profileLines.push(`Weight: ${profile.weight} lbs`);
+    if (profile.height) profileLines.push(`Height: ${profile.height}`);
+    if (profile.goal) profileLines.push(`Primary goal: ${profile.goal.replace('_', ' ')}`);
+    if (profile.equipment?.length) profileLines.push(`Equipment: ${profile.equipment.join(', ')}`);
+    if (profile.activities?.length) {
+      const activityLines = profile.activities.map(a => {
+        const days = profile.trainingDays?.[a];
+        return days ? `${a} (${days}x/week)` : a;
+      });
+      profileLines.push(`Trains: ${activityLines.join(', ')}`);
+    }
+    const profileContext = profileLines.length > 0
+      ? profileLines.join('\n')
+      : 'No profile set up yet — give general advice.';
 
     // Build a summary of sessions to send to Claude
     const sessionSummary = sessions.map(s => {
@@ -38,21 +57,23 @@ exports.getCoachingAdvice = onRequest(
       }
     }).join("\n\n");
 
-    const prompt = `You are a personal fitness and BJJ coach. Your athlete is following the "Daredevil Plan" — a 2-day dumbbell home workout split:
+    const prompt = `You are a personal fitness and BJJ coach. Here is your athlete's profile:
+
+${profileContext}
+
+The app offers "The Daredevil Plan" — a 2-day dumbbell home workout split:
 - Day 1 (Push/Legs): Goblet Squat, Dumbbell Floor Press, Dumbbell Shoulder Press, Push Up, Dumbbell Lunge, Overhead Tricep Extension, Dead Bug
 - Day 2 (Pull/Hinge): Romanian Deadlift, Dumbbell Row, Pull Up, Bicep Curl, Lateral Raise, Dumbbell Rear Delt Fly, Russian Twist
-
-They have dumbbells from 5-25 lbs, train BJJ twice a week, and are 38 years old. Recovery matters. Goals are increased strength and improved definition in arms, shoulders, and legs.
 
 Here are their recent training sessions:
 
 ${sessionSummary}
 
-Based on this data, give me 3-4 short, specific, actionable coaching insights. Focus on:
-- Progressive overload suggestions (when to increase weight, reps, or sets based on what you see)
-- Recovery and training balance between lifting and BJJ
-- BJJ technique patterns you notice
-- Any other observations relevant to their progress
+Based on their profile and session data, give 3-4 short, specific, actionable coaching insights. Focus on:
+- Progressive overload suggestions (when to increase weight, reps, or sets)
+- Recovery and training balance across all their activities
+- Any patterns you notice in their BJJ technique or lifting progress
+- Advice tailored to their specific goal and equipment
 
 Keep each insight to 2-3 sentences max. Be direct and practical, not generic. Format as a simple numbered list.`;
 

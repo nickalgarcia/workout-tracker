@@ -812,6 +812,147 @@ select.field-input option { background: var(--surface2); }
 }
 .detail-saved-link:hover { background: var(--bjj-dim); }
 
+/* ── Onboarding Screen ── */
+#onboarding-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  overflow-y: auto;
+  z-index: 150;
+  padding: 0 0 40px;
+}
+#onboarding-screen.hidden { display: none; }
+#onboarding-box {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 20px 0;
+}
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.onboarding-skip-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 12px;
+  display: block;
+  width: 100%;
+}
+
+/* ── Onboarding Form Elements ── */
+.ob-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ob-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ob-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ob-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ob-check:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.ob-goal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ob-goal-btn {
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.ob-goal-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.ob-days-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.ob-days-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ob-days-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ob-days-label {
+  font-size: 13px;
+  color: var(--text);
+  min-width: 70px;
+}
+.ob-days-select {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+/* ── Settings ── */
+.settings-intro {
+  margin-bottom: 24px;
+}
+.settings-intro-text {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ── User Menu Item ── */
+.user-menu-item {
+  width: 100%;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  margin-bottom: 8px;
+  text-align: left;
+}
+.user-menu-item:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ── Progress Guidance ── */
 .progress-guidance {
   background: var(--surface);
