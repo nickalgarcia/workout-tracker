@@ -1,13 +1,12 @@
 const { onRequest } = require("firebase-functions/v2/https");
-const { defineSecret } = require("firebase-functions/params");
 const https = require("https");
 
-const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
-
 exports.getCoachingAdvice = onRequest(
-  { secrets: [ANTHROPIC_API_KEY], cors: true },
+  {
+    cors: true,
+    secrets: ["ANTHROPIC_API_KEY"]
+  },
   async (req, res) => {
-    // Only allow POST
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
       return;
@@ -23,24 +22,24 @@ exports.getCoachingAdvice = onRequest(
     // Build profile context
     const profileLines = [];
     if (profile.name) profileLines.push(`Name: ${profile.name}`);
-    if (profile.gender && profile.gender !== 'prefer_not') profileLines.push(`Gender: ${profile.gender}`);
+    if (profile.gender && profile.gender !== "prefer_not") profileLines.push(`Gender: ${profile.gender}`);
     if (profile.age) profileLines.push(`Age: ${profile.age}`);
     if (profile.weight) profileLines.push(`Weight: ${profile.weight} lbs`);
     if (profile.height) profileLines.push(`Height: ${profile.height}`);
-    if (profile.goal) profileLines.push(`Primary goal: ${profile.goal.replace('_', ' ')}`);
-    if (profile.equipment?.length) profileLines.push(`Equipment: ${profile.equipment.join(', ')}`);
-    if (profile.activities?.length) {
+    if (profile.goal) profileLines.push(`Primary goal: ${profile.goal.replace("_", " ")}`);
+    if (profile.equipment && profile.equipment.length) profileLines.push(`Equipment: ${profile.equipment.join(", ")}`);
+    if (profile.activities && profile.activities.length) {
       const activityLines = profile.activities.map(a => {
-        const days = profile.trainingDays?.[a];
+        const days = profile.trainingDays && profile.trainingDays[a];
         return days ? `${a} (${days}x/week)` : a;
       });
-      profileLines.push(`Trains: ${activityLines.join(', ')}`);
+      profileLines.push(`Trains: ${activityLines.join(", ")}`);
     }
     const profileContext = profileLines.length > 0
-      ? profileLines.join('\n')
-      : 'No profile set up yet — give general advice.';
+      ? profileLines.join("\n")
+      : "No profile set up yet — give general advice.";
 
-    // Build a summary of sessions to send to Claude
+    // Build session summary
     const sessionSummary = sessions.map(s => {
       if (s.type === "lifting") {
         const exercises = (s.exercises || []).map(ex => {
@@ -49,19 +48,19 @@ exports.getCoachingAdvice = onRequest(
           ).join(", ");
           return `  - ${ex.name}: ${sets}`;
         }).join("\n");
-        return `Lifting session on ${s.date} (${s.planLabel || 'Free'}):\n${exercises}`;
+        return `Lifting session on ${s.date} (${s.planLabel || "Free"}):\n${exercises}`;
       } else if (s.type === "bjj") {
         const techniques = (s.techniques || []).map(t =>
           typeof t === "string" ? t : t.name
         ).join(", ");
         return `BJJ session on ${s.date}: ${s.duration} mins, ${s.sessionType}. Techniques: ${techniques || "none logged"}`;
       } else if (s.type === "yoga") {
-        return `Yoga session on ${s.date}: ${s.duration} mins, ${s.style} style.${s.notes ? ' Notes: ' + s.notes : ''}`;
+        return `Yoga session on ${s.date}: ${s.duration} mins, ${s.style} style.${s.notes ? " Notes: " + s.notes : ""}`;
       } else if (s.type === "cardio") {
-        const dist = s.distance ? `, ${s.distance} ${s.distanceUnit}` : '';
-        return `Cardio session on ${s.date}: ${s.duration} mins, ${s.cardioType}${dist}.${s.notes ? ' Notes: ' + s.notes : ''}`;
+        const dist = s.distance ? `, ${s.distance} ${s.distanceUnit}` : "";
+        return `Cardio session on ${s.date}: ${s.duration} mins, ${s.cardioType}${dist}.${s.notes ? " Notes: " + s.notes : ""}`;
       }
-      return '';
+      return "";
     }).filter(Boolean).join("\n\n");
 
     const prompt = `You are a personal fitness and BJJ coach. Here is your athlete's profile:
@@ -84,7 +83,8 @@ Based on their profile and session data, give 3-4 short, specific, actionable co
 
 Keep each insight to 2-3 sentences max. Be direct and practical, not generic. Format as a simple numbered list.`;
 
-    // Call Anthropic API
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+
     const requestBody = JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 600,
@@ -97,7 +97,7 @@ Keep each insight to 2-3 sentences max. Be direct and practical, not generic. Fo
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY.value(),
+        "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
         "Content-Length": Buffer.byteLength(requestBody)
       }
@@ -120,7 +120,9 @@ Keep each insight to 2-3 sentences max. Be direct and practical, not generic. Fo
       apiReq.end();
     });
 
-    const text = anthropicResponse.content?.[0]?.text || "No advice available.";
+    const text = anthropicResponse.content && anthropicResponse.content[0]
+      ? anthropicResponse.content[0].text
+      : "No advice available.";
     res.json({ advice: text });
   }
 );
