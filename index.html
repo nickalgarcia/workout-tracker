@@ -51,6 +51,16 @@
           </div>
         </div>
         <div class="form-section">
+          <label class="field-label">Gender</label>
+          <div class="ob-goal-grid">
+            <button class="ob-goal-btn" data-value="male" onclick="window.selectGoal(this, 'ob-gender')">Male</button>
+            <button class="ob-goal-btn" data-value="female" onclick="window.selectGoal(this, 'ob-gender')">Female</button>
+            <button class="ob-goal-btn" data-value="nonbinary" onclick="window.selectGoal(this, 'ob-gender')">Non-binary</button>
+            <button class="ob-goal-btn" data-value="prefer_not" onclick="window.selectGoal(this, 'ob-gender')">Prefer not to say</button>
+          </div>
+          <input type="hidden" id="ob-gender" value="" />
+        </div>
+        <div class="form-section">
           <label class="field-label">What do you train?</label>
           <div class="ob-checks" id="ob-activities">
             <label class="ob-check"><input type="checkbox" value="lifting" /> Lifting</label>
@@ -350,6 +360,16 @@
             <label class="field-label">Height</label>
             <input type="text" id="set-height" class="field-input" placeholder="e.g. 5'8" />
           </div>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Gender</label>
+          <div class="ob-goal-grid">
+            <button class="ob-goal-btn" data-value="male" onclick="window.selectGoal(this, 'set-gender')">Male</button>
+            <button class="ob-goal-btn" data-value="female" onclick="window.selectGoal(this, 'set-gender')">Female</button>
+            <button class="ob-goal-btn" data-value="nonbinary" onclick="window.selectGoal(this, 'set-gender')">Non-binary</button>
+            <button class="ob-goal-btn" data-value="prefer_not" onclick="window.selectGoal(this, 'set-gender')">Prefer not to say</button>
+          </div>
+          <input type="hidden" id="set-gender" value="" />
         </div>
         <div class="form-section">
           <label class="field-label">What do you train?</label>

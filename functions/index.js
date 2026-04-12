@@ -23,6 +23,7 @@ exports.getCoachingAdvice = onRequest(
     // Build profile context
     const profileLines = [];
     if (profile.name) profileLines.push(`Name: ${profile.name}`);
+    if (profile.gender && profile.gender !== 'prefer_not') profileLines.push(`Gender: ${profile.gender}`);
     if (profile.age) profileLines.push(`Age: ${profile.age}`);
     if (profile.weight) profileLines.push(`Weight: ${profile.weight} lbs`);
     if (profile.height) profileLines.push(`Height: ${profile.height}`);

@@ -109,11 +109,14 @@ async function saveSessionToDB(session) {
 
 // Get all sessions, newest first
 async function getSessionsFromDB(type = 'all') {
-  const q = query(sessionsRef(), orderBy('createdAt', 'desc'));
+  let q;
+  if (type === 'all') {
+    q = query(sessionsRef(), orderBy('createdAt', 'desc'));
+  } else {
+    q = query(sessionsRef(), where('type', '==', type), orderBy('createdAt', 'desc'));
+  }
   const snapshot = await getDocs(q);
-  const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (type === 'all') return all;
-  return all.filter(s => s.type === type);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 // Delete a session
@@ -184,6 +187,7 @@ function collectOnboardingData(prefix) {
   const weight = document.getElementById(`${prefix}-weight`)?.value || '';
   const height = document.getElementById(`${prefix}-height`)?.value.trim() || '';
   const goal = document.getElementById(`${prefix}-goal`)?.value || '';
+  const gender = document.getElementById(`${prefix}-gender`)?.value || '';
 
   const activitiesId = prefix === 'ob' ? 'ob-activities' : 'set-activities';
   const daysGridId = prefix === 'ob' ? 'ob-days-grid' : 'set-days-grid';
@@ -197,7 +201,7 @@ function collectOnboardingData(prefix) {
     trainingDays[sel.dataset.activity] = parseInt(sel.value);
   });
 
-  return { name, age: parseInt(age) || null, weight: parseInt(weight) || null, height, goal, activities, equipment, trainingDays };
+  return { name, age: parseInt(age) || null, weight: parseInt(weight) || null, height, goal, gender, activities, equipment, trainingDays };
 }
 
 window.selectGoal = (btn, hiddenId) => {
@@ -240,6 +244,15 @@ async function initSettingsView() {
     document.getElementById('set-goal').value = profile.goal;
     document.querySelectorAll('#view-settings .ob-goal-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.value === profile.goal);
+    });
+  }
+
+  if (profile.gender) {
+    document.getElementById('set-gender').value = profile.gender;
+    document.querySelectorAll('#view-settings .ob-goal-grid .ob-goal-btn').forEach(btn => {
+      if (btn.getAttribute('onclick')?.includes('set-gender')) {
+        btn.classList.toggle('active', btn.dataset.value === profile.gender);
+      }
     });
   }
 
@@ -663,6 +676,16 @@ async function renderDashboard() {
   const firstName = profile?.name || currentUser?.displayName?.split(' ')[0] || 'there';
   const greeting = h < 12 ? `Good morning, ${firstName}.` : h < 17 ? `Good afternoon, ${firstName}.` : `Good evening, ${firstName}.`;
   document.getElementById('greeting').textContent = greeting;
+
+  // Build activity cards based on profile — fallback to all if no profile
+  const activities = profile?.activities?.length ? profile.activities : ['lifting', 'bjj', 'cardio', 'yoga'];
+  const allCards = {
+    lifting: `<button class="action-card lifting" onclick="window.navigate('log-lifting')"><span class="card-icon">🏋️</span><span class="card-label">Log Lifting</span><span class="card-sub">Sets · Reps · Weight</span></button>`,
+    bjj:     `<button class="action-card bjj" onclick="window.navigate('log-bjj')"><span class="card-icon">🥋</span><span class="card-label">Log BJJ</span><span class="card-sub">Duration · Techniques</span></button>`,
+    cardio:  `<button class="action-card cardio" onclick="window.navigate('log-cardio')"><span class="card-icon">🏃</span><span class="card-label">Log Cardio</span><span class="card-sub">Duration · Distance</span></button>`,
+    yoga:    `<button class="action-card yoga" onclick="window.navigate('log-yoga')"><span class="card-icon">🧘</span><span class="card-label">Log Yoga</span><span class="card-sub">Duration · Style</span></button>`,
+  };
+  document.querySelector('.action-cards').innerHTML = activities.map(a => allCards[a] || '').join('');
 
   const container = document.getElementById('recent-sessions');
   container.innerHTML = '<div class="loading-state">Loading...</div>';
