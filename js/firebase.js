@@ -647,7 +647,8 @@ window.navigate = async (viewName) => {
     'log-bjj': 'LOG BJJ', 'history': 'HISTORY',
     'detail': 'SESSION', 'progress': 'PROGRESS',
     'coach': 'COACH', 'settings': 'SETTINGS',
-    'log-yoga': 'LOG YOGA', 'log-cardio': 'LOG CARDIO'
+    'log-yoga': 'LOG YOGA', 'log-cardio': 'LOG CARDIO',
+    'log-pilates': 'LOG PILATES'
   };
   document.getElementById('page-title').textContent = titles[viewName] || 'TRAIN LOG';
 
@@ -656,6 +657,7 @@ window.navigate = async (viewName) => {
   if (viewName === 'log-bjj') initBJJForm();
   if (viewName === 'log-yoga') initYogaForm();
   if (viewName === 'log-cardio') initCardioForm();
+  if (viewName === 'log-pilates') initPilatesForm();
   if (viewName === 'history') await renderHistory('all');
   if (viewName === 'progress') await renderProgressView();
   if (viewName === 'coach') initCoachView();
@@ -684,6 +686,7 @@ async function renderDashboard() {
     bjj:     `<button class="action-card bjj" onclick="window.navigate('log-bjj')"><span class="card-icon">🥋</span><span class="card-label">Log BJJ</span><span class="card-sub">Duration · Techniques</span></button>`,
     cardio:  `<button class="action-card cardio" onclick="window.navigate('log-cardio')"><span class="card-icon">🏃</span><span class="card-label">Log Cardio</span><span class="card-sub">Duration · Distance</span></button>`,
     yoga:    `<button class="action-card yoga" onclick="window.navigate('log-yoga')"><span class="card-icon">🧘</span><span class="card-label">Log Yoga</span><span class="card-sub">Duration · Style</span></button>`,
+    pilates: `<button class="action-card pilates" onclick="window.navigate('log-pilates')"><span class="card-icon">🤸</span><span class="card-label">Log Pilates</span><span class="card-sub">Style · Focus</span></button>`,
   };
   document.querySelector('.action-cards').innerHTML = activities.map(a => allCards[a] || '').join('');
 
@@ -742,9 +745,11 @@ function buildSessionCard(session) {
   } else if (type === 'cardio') {
     const dist = session.distance ? ` · ${session.distance} ${session.distanceUnit}` : '';
     summary = `${session.duration} min · ${capitalize(session.cardioType)}${dist}`;
+  } else if (type === 'pilates') {
+    summary = `${session.duration} min · ${capitalize(session.style)} · ${capitalize(session.focus?.replace('_', ' ') || '')}`;
   }
 
-  const typeColors = { lifting: 'lifting', bjj: 'bjj', yoga: 'yoga', cardio: 'cardio-type' };
+  const typeColors = { lifting: 'lifting', bjj: 'bjj', yoga: 'yoga', cardio: 'cardio-type', pilates: 'pilates-type' };
   const colorClass = typeColors[type] || 'lifting';
 
   return `
@@ -851,9 +856,21 @@ function buildDetailHTML(session) {
       </div>
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
+  } else if (type === 'pilates') {
+    body = `
+      <div class="detail-section">
+        <div class="detail-section-title">Details</div>
+        <div class="detail-meta">
+          <div class="detail-meta-item"><span>Duration</span>${session.duration} min</div>
+          <div class="detail-meta-item"><span>Style</span>${capitalize(session.style)}</div>
+          <div class="detail-meta-item"><span>Focus</span>${capitalize(session.focus?.replace('_', ' ') || '')}</div>
+        </div>
+      </div>
+      ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
+    `;
   }
 
-  const typeLabels = { lifting: 'LIFTING', bjj: 'BJJ', yoga: 'YOGA', cardio: 'CARDIO' };
+  const typeLabels = { lifting: 'LIFTING', bjj: 'BJJ', yoga: 'YOGA', cardio: 'CARDIO', pilates: 'PILATES' };
   const typeColorClass = type;
 
   return `
@@ -879,7 +896,8 @@ window.deleteSession = async (id) => {
 
 // ── Progress ──
 async function renderProgressView() {
-  const sessions = await getSessionsFromDB('lifting');
+  const allSessions = await getSessionsFromDB('all');
+  const sessions = allSessions.filter(s => s.type === 'lifting');
   const names = new Set();
   sessions.forEach(s => (s.exercises || []).forEach(e => { if (e.name) names.add(e.name); }));
 
@@ -887,7 +905,6 @@ async function renderProgressView() {
   select.innerHTML = '<option value="">Select an exercise...</option>' +
     Array.from(names).sort().map(n => `<option value="${n}">${n}</option>`).join('');
 
-  // Show helpful guidance based on how many sessions exist
   const sessionCount = sessions.length;
   let message = '';
 
@@ -923,7 +940,8 @@ window.renderProgress = async () => {
   }
 
   container.innerHTML = '<div class="loading-state">Loading...</div>';
-  const sessions = await getSessionsFromDB('lifting');
+  const allSessions = await getSessionsFromDB('all');
+  const sessions = allSessions.filter(s => s.type === 'lifting');
 
   const data = sessions
     .map(s => {
@@ -1045,12 +1063,61 @@ window.saveCardio = async () => {
   }
 };
 
+// ── Pilates Module ──
+function initPilatesForm() {
+  document.getElementById('pilates-date').value = todayStr();
+  document.getElementById('pilates-duration').value = '';
+  document.getElementById('pilates-notes').value = '';
+  document.getElementById('pilates-style').value = 'mat';
+  document.getElementById('pilates-focus').value = 'core';
+  document.querySelectorAll('#view-log-pilates .toggle-btn').forEach(btn => {
+    const group = btn.closest('.toggle-group');
+    const hiddenId = group.nextElementSibling?.id;
+    btn.classList.toggle('active',
+      (hiddenId === 'pilates-style' && btn.dataset.value === 'mat') ||
+      (hiddenId === 'pilates-focus' && btn.dataset.value === 'core')
+    );
+  });
+}
+
+window.savePilates = async () => {
+  const date = document.getElementById('pilates-date').value;
+  if (!date) { showToast('Please select a date'); return; }
+  const duration = document.getElementById('pilates-duration').value;
+  if (!duration) { showToast('Please enter duration'); return; }
+  const style = document.getElementById('pilates-style').value;
+  const focus = document.getElementById('pilates-focus').value;
+  const notes = document.getElementById('pilates-notes').value.trim();
+
+  const btn = document.getElementById('save-pilates-btn');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  try {
+    await saveSessionToDB({ type: 'pilates', date, duration: parseInt(duration), style, focus, notes });
+    showToast('Pilates session logged! 🤸');
+    navigate('dashboard');
+  } catch (e) {
+    console.error(e);
+    showToast('Error saving. Try again.');
+  } finally {
+    btn.textContent = 'Save Session';
+    btn.disabled = false;
+  }
+};
+
 // ── Coach ──
+let coachSessions = [];
+let coachProfile = {};
+let chatHistory = [];
+
 function initCoachView() {
   const output = document.getElementById('coach-output');
   output.innerHTML = '';
   document.getElementById('get-advice-btn').disabled = false;
   document.getElementById('get-advice-btn').textContent = 'Analyze My Training';
+  chatHistory = [];
+  // Hide chat until analysis runs
+  document.getElementById('coach-chat').classList.add('hidden');
 }
 
 window.getCoachingAdvice = async () => {
@@ -1062,11 +1129,10 @@ window.getCoachingAdvice = async () => {
   output.innerHTML = '<div class="coach-loading"><div class="coach-spinner"></div><p>Claude is reviewing your sessions...</p></div>';
 
   try {
-    const sessions = await getSessionsFromDB('all');
-    const recent = sessions.slice(0, 20);
-    const profile = await getProfile();
+    coachSessions = (await getSessionsFromDB('all')).slice(0, 20);
+    coachProfile = await getProfile() || {};
 
-    if (recent.length === 0) {
+    if (coachSessions.length === 0) {
       output.innerHTML = '<div class="coach-empty">Log some sessions first and your coach will have data to work with.</div>';
       btn.disabled = false;
       btn.textContent = 'Analyze My Training';
@@ -1078,7 +1144,7 @@ window.getCoachingAdvice = async () => {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessions: recent, profile: profile || {} })
+        body: JSON.stringify({ sessions: coachSessions, profile: coachProfile, messages: [] })
       }
     );
 
@@ -1087,21 +1153,13 @@ window.getCoachingAdvice = async () => {
     const data = await response.json();
     const advice = data.advice || 'No advice returned.';
 
-    // Format numbered list nicely
-    const formatted = advice
-      .split('\n')
-      .filter(line => line.trim())
-      .map(line => {
-        const isNumbered = /^\d+\./.test(line.trim());
-        return isNumbered
-          ? `<div class="coach-insight">${line.trim()}</div>`
-          : `<div class="coach-insight-body">${line.trim()}</div>`;
-      })
-      .join('');
+    // Store as first message in chat history
+    chatHistory = [{ role: 'assistant', content: advice }];
 
-    const sessionCount = recent.length;
-    const liftCount = recent.filter(s => s.type === 'lifting').length;
-    const bjjCount = recent.filter(s => s.type === 'bjj').length;
+    const formatted = formatCoachResponse(advice);
+    const sessionCount = coachSessions.length;
+    const liftCount = coachSessions.filter(s => s.type === 'lifting').length;
+    const bjjCount = coachSessions.filter(s => s.type === 'bjj').length;
 
     output.innerHTML = `
       <div class="coach-meta">
@@ -1111,6 +1169,12 @@ window.getCoachingAdvice = async () => {
       <div class="coach-advice">${formatted}</div>
       <button class="coach-refresh-btn" onclick="window.getCoachingAdvice()">↺ Refresh Analysis</button>
     `;
+
+    // Show chat after analysis
+    const chat = document.getElementById('coach-chat');
+    chat.classList.remove('hidden');
+    document.getElementById('chat-messages').innerHTML = '';
+
   } catch (e) {
     console.error(e);
     output.innerHTML = '<div class="coach-empty">Something went wrong. Check your connection and try again.</div>';
@@ -1119,6 +1183,82 @@ window.getCoachingAdvice = async () => {
     btn.textContent = 'Analyze My Training';
   }
 };
+
+window.sendChatMessage = async () => {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  input.value = '';
+  input.disabled = true;
+  document.getElementById('chat-send-btn').disabled = true;
+
+  const messagesEl = document.getElementById('chat-messages');
+
+  // Add user message to UI
+  messagesEl.innerHTML += `<div class="chat-msg chat-msg-user">${message}</div>`;
+  messagesEl.innerHTML += `<div class="chat-msg chat-msg-assistant"><div class="coach-spinner" style="width:16px;height:16px;margin:4px 0;"></div></div>`;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  // Add to history
+  chatHistory.push({ role: 'user', content: message });
+
+  try {
+    const response = await fetch(
+      'https://us-central1-workout-tracker-c1205.cloudfunctions.net/getCoachingAdvice',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessions: coachSessions,
+          profile: coachProfile,
+          messages: chatHistory
+        })
+      }
+    );
+
+    if (!response.ok) throw new Error('Function call failed');
+
+    const data = await response.json();
+    const reply = data.advice || 'No response.';
+
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    // Replace spinner with response
+    const msgs = messagesEl.querySelectorAll('.chat-msg-assistant');
+    msgs[msgs.length - 1].innerHTML = reply;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  } catch (e) {
+    console.error(e);
+    const msgs = messagesEl.querySelectorAll('.chat-msg-assistant');
+    msgs[msgs.length - 1].innerHTML = 'Something went wrong. Try again.';
+  } finally {
+    input.disabled = false;
+    document.getElementById('chat-send-btn').disabled = false;
+    input.focus();
+  }
+};
+
+window.handleChatKey = (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    window.sendChatMessage();
+  }
+};
+
+function formatCoachResponse(text) {
+  return text
+    .split('\n')
+    .filter(line => line.trim())
+    .map(line => {
+      const isNumbered = /^\d+\./.test(line.trim());
+      return isNumbered
+        ? `<div class="coach-insight">${line.trim()}</div>`
+        : `<div class="coach-insight-body">${line.trim()}</div>`;
+    })
+    .join('');
+}
 
 // ── Toast ──
 function showToast(message) {

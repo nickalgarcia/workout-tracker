@@ -15,6 +15,8 @@
   --yoga-dim:   rgba(192,132,252,0.12);
   --cardio:     #fb923c;
   --cardio-dim: rgba(251,146,60,0.12);
+  --pilates:    #f472b6;
+  --pilates-dim: rgba(244,114,182,0.12);
   --danger:     #f04a4a;
   --radius:     12px;
   --radius-sm:  8px;
@@ -134,6 +136,7 @@ body {
 .action-card.bjj:hover { border-color: var(--bjj); background: var(--bjj-dim); }
 .action-card.yoga:hover { border-color: var(--yoga); background: var(--yoga-dim); }
 .action-card.cardio:hover { border-color: var(--cardio); background: var(--cardio-dim); }
+.action-card.pilates:hover { border-color: var(--pilates); background: var(--pilates-dim); }
 .card-icon { font-size: 28px; margin-bottom: 12px; }
 .card-label {
   font-family: var(--font-head);
@@ -192,8 +195,10 @@ body {
 .session-card-type.bjj { color: var(--bjj); }
 .session-card-type.yoga { color: var(--yoga); }
 .session-card-type.cardio-type { color: var(--cardio); }
+.session-card-type.pilates-type { color: var(--pilates); }
 .detail-type.yoga { color: var(--yoga); }
 .detail-type.cardio { color: var(--cardio); }
+.detail-type.pilates { color: var(--pilates); }
 
 /* ── Style Toggle (wrapping) ── */
 .style-toggle {
@@ -1122,6 +1127,85 @@ select.field-input option { background: var(--surface2); }
   transition: border-color 0.15s, color 0.15s;
 }
 .coach-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Coach Chat ── */
+.coach-chat {
+  margin-top: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.coach-chat.hidden { display: none; }
+.coach-chat-header {
+  background: var(--surface2);
+  padding: 10px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.chat-messages {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.chat-msg {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 90%;
+}
+.chat-msg-user {
+  background: var(--accent-dim);
+  border: 1px solid rgba(200,240,74,0.2);
+  color: var(--text);
+  align-self: flex-end;
+  text-align: right;
+}
+.chat-msg-assistant {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  align-self: flex-start;
+}
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.chat-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 10px 12px;
+  outline: none;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-send-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #0f0f0f;
+  font-size: 18px;
+  font-weight: 700;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Toast ── */
 .toast {

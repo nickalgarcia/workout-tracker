@@ -67,6 +67,7 @@
             <label class="ob-check"><input type="checkbox" value="bjj" /> BJJ</label>
             <label class="ob-check"><input type="checkbox" value="cardio" /> Cardio</label>
             <label class="ob-check"><input type="checkbox" value="yoga" /> Yoga</label>
+            <label class="ob-check"><input type="checkbox" value="pilates" /> Pilates</label>
           </div>
         </div>
         <div class="form-section">
@@ -295,6 +296,45 @@
         <button class="save-btn" id="save-cardio-btn" onclick="window.saveCardio()">Save Session</button>
       </section>
 
+      <!-- Log Pilates -->
+      <section id="view-log-pilates" class="view">
+        <div class="form-section">
+          <label class="field-label">Date</label>
+          <input type="date" id="pilates-date" class="field-input" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Duration (minutes)</label>
+          <input type="number" id="pilates-duration" class="field-input" placeholder="e.g. 50" min="1" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Style</label>
+          <div class="toggle-group style-toggle">
+            <button class="toggle-btn active" data-value="mat" onclick="window.selectToggle(this, 'pilates-style')">Mat</button>
+            <button class="toggle-btn" data-value="reformer" onclick="window.selectToggle(this, 'pilates-style')">Reformer</button>
+            <button class="toggle-btn" data-value="tower" onclick="window.selectToggle(this, 'pilates-style')">Tower</button>
+            <button class="toggle-btn" data-value="chair" onclick="window.selectToggle(this, 'pilates-style')">Chair</button>
+            <button class="toggle-btn" data-value="other" onclick="window.selectToggle(this, 'pilates-style')">Other</button>
+          </div>
+          <input type="hidden" id="pilates-style" value="mat" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Focus Area</label>
+          <div class="toggle-group style-toggle">
+            <button class="toggle-btn active" data-value="core" onclick="window.selectToggle(this, 'pilates-focus')">Core</button>
+            <button class="toggle-btn" data-value="full_body" onclick="window.selectToggle(this, 'pilates-focus')">Full Body</button>
+            <button class="toggle-btn" data-value="upper" onclick="window.selectToggle(this, 'pilates-focus')">Upper</button>
+            <button class="toggle-btn" data-value="lower" onclick="window.selectToggle(this, 'pilates-focus')">Lower</button>
+            <button class="toggle-btn" data-value="flexibility" onclick="window.selectToggle(this, 'pilates-focus')">Flexibility</button>
+          </div>
+          <input type="hidden" id="pilates-focus" value="core" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Notes (optional)</label>
+          <textarea id="pilates-notes" class="field-input field-textarea" placeholder="How did it feel? Any breakthroughs?"></textarea>
+        </div>
+        <button class="save-btn" id="save-pilates-btn" onclick="window.savePilates()">Save Session</button>
+      </section>
+
       <!-- History -->
       <section id="view-history" class="view">
         <div class="filter-row">
@@ -303,6 +343,7 @@
           <button class="filter-btn" data-filter="bjj" onclick="window.filterHistory(this)">BJJ</button>
           <button class="filter-btn" data-filter="cardio" onclick="window.filterHistory(this)">Cardio</button>
           <button class="filter-btn" data-filter="yoga" onclick="window.filterHistory(this)">Yoga</button>
+          <button class="filter-btn" data-filter="pilates" onclick="window.filterHistory(this)">Pilates</button>
         </div>
         <div id="history-list" class="session-list">
           <div class="loading-state">Loading...</div>
@@ -336,6 +377,22 @@
           Analyze My Training
         </button>
         <div id="coach-output"></div>
+
+        <!-- Chat -->
+        <div id="coach-chat" class="coach-chat hidden">
+          <div class="coach-chat-header">Ask your coach a follow-up</div>
+          <div id="chat-messages" class="chat-messages"></div>
+          <div class="chat-input-row">
+            <input
+              type="text"
+              id="chat-input"
+              class="chat-input"
+              placeholder="e.g. I don't have heavier weights, what else can I do?"
+              onkeydown="window.handleChatKey(event)"
+            />
+            <button id="chat-send-btn" class="chat-send-btn" onclick="window.sendChatMessage()">&#8593;</button>
+          </div>
+        </div>
       </section>
 
       <!-- Settings -->
@@ -378,6 +435,7 @@
             <label class="ob-check"><input type="checkbox" value="bjj" /> BJJ</label>
             <label class="ob-check"><input type="checkbox" value="cardio" /> Cardio</label>
             <label class="ob-check"><input type="checkbox" value="yoga" /> Yoga</label>
+            <label class="ob-check"><input type="checkbox" value="pilates" /> Pilates</label>
           </div>
         </div>
         <div class="form-section">
