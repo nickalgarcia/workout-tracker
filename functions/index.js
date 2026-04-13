@@ -12,7 +12,7 @@ exports.getCoachingAdvice = onRequest(
       return;
     }
 
-    const { sessions, profile = {} } = req.body;
+    const { sessions, profile = {}, messages = [] } = req.body;
 
     if (!sessions || sessions.length === 0) {
       res.status(400).json({ error: "No session data provided" });
@@ -59,11 +59,15 @@ exports.getCoachingAdvice = onRequest(
       } else if (s.type === "cardio") {
         const dist = s.distance ? `, ${s.distance} ${s.distanceUnit}` : "";
         return `Cardio session on ${s.date}: ${s.duration} mins, ${s.cardioType}${dist}.${s.notes ? " Notes: " + s.notes : ""}`;
+      } else if (s.type === "pilates") {
+        const focus = s.focus ? s.focus.replace("_", " ") : "";
+        return `Pilates session on ${s.date}: ${s.duration} mins, ${s.style} style, focus: ${focus}.${s.notes ? " Notes: " + s.notes : ""}`;
       }
       return "";
     }).filter(Boolean).join("\n\n");
 
-    const prompt = `You are a personal fitness and BJJ coach. Here is your athlete's profile:
+    // System prompt with full context
+    const systemPrompt = `You are a personal fitness and BJJ coach. Here is your athlete's profile:
 
 ${profileContext}
 
@@ -75,20 +79,28 @@ Here are their recent training sessions:
 
 ${sessionSummary}
 
-Based on their profile and session data, give 3-4 short, specific, actionable coaching insights. Focus on:
-- Progressive overload suggestions (when to increase weight, reps, or sets)
-- Recovery and training balance across all their activities
-- Any patterns you notice in their BJJ technique or lifting progress
-- Advice tailored to their specific goal and equipment
+You are having a coaching conversation with this athlete. Be direct, practical, and specific. Keep responses concise — 2-4 sentences per point. When giving the initial analysis, format as a numbered list. For follow-up questions, respond conversationally.`;
 
-Keep each insight to 2-3 sentences max. Be direct and practical, not generic. Format as a simple numbered list.`;
+    // Build messages array — initial analysis or follow-up chat
+    let apiMessages;
+    if (messages.length === 0) {
+      // Initial analysis request
+      apiMessages = [{
+        role: "user",
+        content: "Based on my profile and recent sessions, give me 3-4 short, specific, actionable coaching insights. Focus on progressive overload, recovery balance, and any patterns you notice. Format as a numbered list."
+      }];
+    } else {
+      // Ongoing chat — pass full history
+      apiMessages = messages;
+    }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     const requestBody = JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 600,
-      messages: [{ role: "user", content: prompt }]
+      system: systemPrompt,
+      messages: apiMessages
     });
 
     const options = {
