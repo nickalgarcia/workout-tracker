@@ -1264,6 +1264,12 @@ window.handleChatKey = (e) => {
 
 function formatCoachResponse(text) {
   return text
+    // Remove markdown headers like # or ##
+    .replace(/^#{1,3}\s+.+\n?/gm, '')
+    // Remove bold markers ** but keep the text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Remove italic markers * but keep the text
+    .replace(/\*(.*?)\*/g, '$1')
     .split('\n')
     .filter(line => line.trim())
     .map(line => {
