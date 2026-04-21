@@ -153,12 +153,24 @@ async function getProfile() {
 // ── Onboarding ──
 function initOnboardingActivityListeners() {
   const checkboxes = document.querySelectorAll('#ob-activities input[type="checkbox"]');
-  checkboxes.forEach(cb => cb.addEventListener('change', () => updateDaysGrid('ob-activities', 'ob-days-grid')));
+  checkboxes.forEach(cb => cb.addEventListener('change', () => {
+    updateDaysGrid('ob-activities', 'ob-days-grid');
+    toggleDumbbellSection('ob-activities', 'ob-dumbbell-section');
+  }));
 }
 
 function initSettingsActivityListeners() {
   const checkboxes = document.querySelectorAll('#set-activities input[type="checkbox"]');
-  checkboxes.forEach(cb => cb.addEventListener('change', () => updateDaysGrid('set-activities', 'set-days-grid')));
+  checkboxes.forEach(cb => cb.addEventListener('change', () => {
+    updateDaysGrid('set-activities', 'set-days-grid');
+    toggleDumbbellSection('set-activities', 'set-dumbbell-section');
+  }));
+}
+
+function toggleDumbbellSection(activitiesId, sectionId) {
+  const liftingChecked = document.querySelector(`#${activitiesId} input[value="lifting"]`)?.checked;
+  const section = document.getElementById(sectionId);
+  if (section) section.classList.toggle('hidden', !liftingChecked);
 }
 
 function updateDaysGrid(activitiesId, gridId) {
@@ -188,6 +200,7 @@ function collectOnboardingData(prefix) {
   const height = document.getElementById(`${prefix}-height`)?.value.trim() || '';
   const goal = document.getElementById(`${prefix}-goal`)?.value || '';
   const gender = document.getElementById(`${prefix}-gender`)?.value || '';
+  const dumbbellMax = document.getElementById(`${prefix}-dumbbell-max`)?.value || '';
 
   const activitiesId = prefix === 'ob' ? 'ob-activities' : 'set-activities';
   const daysGridId = prefix === 'ob' ? 'ob-days-grid' : 'set-days-grid';
@@ -201,7 +214,7 @@ function collectOnboardingData(prefix) {
     trainingDays[sel.dataset.activity] = parseInt(sel.value);
   });
 
-  return { name, age: parseInt(age) || null, weight: parseInt(weight) || null, height, goal, gender, activities, equipment, trainingDays };
+  return { name, age: parseInt(age) || null, weight: parseInt(weight) || null, height, goal, gender, dumbbellMax: parseInt(dumbbellMax) || null, activities, equipment, trainingDays };
 }
 
 window.selectGoal = (btn, hiddenId) => {
@@ -240,6 +253,7 @@ async function initSettingsView() {
   if (profile.age) document.getElementById('set-age').value = profile.age;
   if (profile.weight) document.getElementById('set-weight').value = profile.weight;
   if (profile.height) document.getElementById('set-height').value = profile.height;
+  if (profile.dumbbellMax) document.getElementById('set-dumbbell-max').value = profile.dumbbellMax;
   if (profile.goal) {
     document.getElementById('set-goal').value = profile.goal;
     document.querySelectorAll('#view-settings .ob-goal-btn').forEach(btn => {
@@ -262,6 +276,7 @@ async function initSettingsView() {
       cb.checked = profile.activities.includes(cb.value);
     });
     updateDaysGrid('set-activities', 'set-days-grid');
+    toggleDumbbellSection('set-activities', 'set-dumbbell-section');
     // Set saved days
     if (profile.trainingDays) {
       setTimeout(() => {

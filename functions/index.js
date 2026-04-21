@@ -28,6 +28,7 @@ exports.getCoachingAdvice = onRequest(
     if (profile.height) profileLines.push(`Height: ${profile.height}`);
     if (profile.goal) profileLines.push(`Primary goal: ${profile.goal.replace("_", " ")}`);
     if (profile.equipment && profile.equipment.length) profileLines.push(`Equipment: ${profile.equipment.join(", ")}`);
+    if (profile.dumbbellMax) profileLines.push(`Heaviest dumbbells available: ${profile.dumbbellMax} lbs — do NOT suggest increasing weight beyond this`);
     if (profile.activities && profile.activities.length) {
       const activityLines = profile.activities.map(a => {
         const days = profile.trainingDays && profile.trainingDays[a];

@@ -100,6 +100,11 @@
             <label class="ob-check"><input type="checkbox" value="bodyweight" /> Bodyweight Only</label>
           </div>
         </div>
+        <div class="form-section hidden" id="ob-dumbbell-section">
+          <label class="field-label">Heaviest Dumbbells (lbs)</label>
+          <input type="number" id="ob-dumbbell-max" class="field-input" placeholder="e.g. 25" min="1" max="200" />
+          <p class="field-hint">This helps your Coach know when to suggest alternatives to adding weight.</p>
+        </div>
         <button class="save-btn" onclick="window.saveOnboarding()">Save Profile and Start Training</button>
         <div style="height: 32px;"></div>
       </div>
@@ -467,6 +472,11 @@
             <label class="ob-check"><input type="checkbox" value="gym" /> Gym Membership</label>
             <label class="ob-check"><input type="checkbox" value="bodyweight" /> Bodyweight Only</label>
           </div>
+        </div>
+        <div class="form-section hidden" id="set-dumbbell-section">
+          <label class="field-label">Heaviest Dumbbells (lbs)</label>
+          <input type="number" id="set-dumbbell-max" class="field-input" placeholder="e.g. 25" min="1" max="200" />
+          <p class="field-hint">This helps your Coach know when to suggest alternatives to adding weight.</p>
         </div>
         <button class="save-btn" onclick="window.saveSettings()">Save Settings</button>
         <div style="height: 32px;"></div>

@@ -941,6 +941,12 @@ select.field-input option { background: var(--surface2); }
   color: var(--text-muted);
   font-size: 12px;
 }
+.field-hint {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 6px;
+  line-height: 1.5;
+}
 .ob-days-grid {
   display: flex;
   flex-direction: column;
