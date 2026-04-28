@@ -726,7 +726,8 @@ async function renderHistory(filter) {
   const container = document.getElementById('history-list');
   container.innerHTML = '<div class="loading-state">Loading...</div>';
   try {
-    const sessions = await getSessionsFromDB(filter);
+    const allSessions = await getSessionsFromDB('all');
+    const sessions = filter === 'all' ? allSessions : allSessions.filter(s => s.type === filter);
     if (sessions.length === 0) {
       container.innerHTML = `<div class="empty-state">No ${filter === 'all' ? '' : filter + ' '}sessions yet.</div>`;
     } else {
