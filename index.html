@@ -140,6 +140,7 @@
         <div class="dashboard-hero">
           <p class="greeting" id="greeting"></p>
           <p class="subgreeting">Ready to put in work?</p>
+          <p class="streak-count" id="streak-count"></p>
         </div>
         <div class="action-cards">
           <button class="action-card lifting" onclick="window.navigate('log-lifting')">
@@ -347,13 +348,10 @@
 
       <!-- History -->
       <section id="view-history" class="view">
-        <div class="filter-row">
-          <button class="filter-btn active" data-filter="all" onclick="window.filterHistory(this)">All</button>
-          <button class="filter-btn" data-filter="lifting" onclick="window.filterHistory(this)">Lifting</button>
-          <button class="filter-btn" data-filter="bjj" onclick="window.filterHistory(this)">BJJ</button>
-          <button class="filter-btn" data-filter="cardio" onclick="window.filterHistory(this)">Cardio</button>
-          <button class="filter-btn" data-filter="yoga" onclick="window.filterHistory(this)">Yoga</button>
-          <button class="filter-btn" data-filter="pilates" onclick="window.filterHistory(this)">Pilates</button>
+        <div class="form-section">
+          <select id="history-filter-select" class="field-input" onchange="window.filterHistory(this)">
+            <option value="all">All Sessions</option>
+          </select>
         </div>
         <div id="history-list" class="session-list">
           <div class="loading-state">Loading...</div>
@@ -501,6 +499,10 @@
       <button class="nav-btn" data-view="coach" onclick="window.navigate('coach')">
         <span class="nav-icon">&#9676;</span>
         <span class="nav-label">Coach</span>
+      </button>
+      <button class="nav-btn" data-view="settings" onclick="window.navigate('settings')">
+        <span class="nav-icon">&#9881;</span>
+        <span class="nav-label">Settings</span>
       </button>
     </nav>
 

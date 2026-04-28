@@ -420,12 +420,12 @@ function initLiftingForm() {
   document.getElementById('exercise-list').innerHTML = '';
   exerciseRowCount = 0;
 
-  // Reset plan selector to Day 1
   document.querySelectorAll('.plan-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.plan === 'day1');
   });
   document.getElementById('selected-plan').value = 'day1';
   loadPlanExercises('day1');
+  watchFormDirty(['lifting-date', 'lifting-notes']);
 }
 
 window.addExerciseRow = () => {
@@ -542,6 +542,7 @@ window.saveLifting = async () => {
   btn.disabled = true;
 
   try {
+    clearFormDirty();
     await saveSessionToDB({ type: 'lifting', date, exercises, notes, plan, planLabel });
     showToast('Session saved! 💪');
     navigate('dashboard');
@@ -565,6 +566,7 @@ function initBJJForm() {
   });
   document.getElementById('technique-list').innerHTML = '';
   addTechniqueRow();
+  watchFormDirty(['bjj-date', 'bjj-duration', 'bjj-notes']);
 }
 
 window.selectToggle = (btn, hiddenId) => {
@@ -627,6 +629,7 @@ window.saveBJJ = async () => {
   btn.disabled = true;
 
   try {
+    clearFormDirty();
     await saveSessionToDB({ type: 'bjj', date, duration: parseInt(duration), sessionType, techniques, notes });
     showToast('BJJ session logged! 🥋');
     navigate('dashboard');
@@ -639,11 +642,32 @@ window.saveBJJ = async () => {
   }
 };
 
+// ── Dirty Form Guard ──
+let formIsDirty = false;
+
+function markFormDirty() { formIsDirty = true; }
+function clearFormDirty() { formIsDirty = false; }
+
+function watchFormDirty(formIds) {
+  clearFormDirty();
+  formIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', markFormDirty, { once: false });
+  });
+}
+
 // ── App / Navigation ──
 const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress', 'coach', 'settings'];
 let viewHistory = ['dashboard'];
 
 window.navigate = async (viewName) => {
+  // Warn if leaving a form with unsaved data
+  const logViews = ['log-lifting', 'log-bjj', 'log-yoga', 'log-cardio', 'log-pilates'];
+  const currentView = viewHistory[viewHistory.length - 1];
+  if (formIsDirty && logViews.includes(currentView) && viewName !== currentView) {
+    if (!confirm('You have unsaved changes. Leave without saving?')) return;
+  }
+  clearFormDirty();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(`view-${viewName}`)?.classList.add('active');
 
@@ -694,6 +718,27 @@ async function renderDashboard() {
   const greeting = h < 12 ? `Good morning, ${firstName}.` : h < 17 ? `Good afternoon, ${firstName}.` : `Good evening, ${firstName}.`;
   document.getElementById('greeting').textContent = greeting;
 
+  // Fetch sessions for streak + activity cards
+  const allSessions = await getSessionsFromDB('all');
+
+  // Build streak — count unique training days in last 7 days
+  const today = new Date();
+  const last7 = new Set();
+  allSessions.forEach(s => {
+    if (!s.date) return;
+    const [y, m, d] = s.date.split('-');
+    const sessionDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const diffDays = Math.floor((today - sessionDate) / (1000 * 60 * 60 * 24));
+    if (diffDays >= 0 && diffDays < 7) last7.add(s.date);
+  });
+  const streakDays = last7.size;
+  const streakEl = document.getElementById('streak-count');
+  if (streakEl) {
+    streakEl.textContent = streakDays > 0
+      ? `${streakDays} session${streakDays > 1 ? 's' : ''} this week 🔥`
+      : 'No sessions yet this week';
+  }
+
   // Build activity cards based on profile — fallback to all if no profile
   const activities = profile?.activities?.length ? profile.activities : ['lifting', 'bjj', 'cardio', 'yoga'];
   const allCards = {
@@ -709,10 +754,14 @@ async function renderDashboard() {
   container.innerHTML = '<div class="loading-state">Loading...</div>';
 
   try {
-    const sessions = await getSessionsFromDB('all');
-    const recent = sessions.slice(0, 5);
+    const recent = allSessions.slice(0, 5);
     if (recent.length === 0) {
-      container.innerHTML = `<div class="empty-state">No sessions yet. Log your first workout!</div>`;
+      container.innerHTML = `
+        <div class="welcome-state">
+          <div class="welcome-icon">👋</div>
+          <div class="welcome-title">Welcome to Train Log${firstName !== 'there' ? ', ' + firstName : ''}!</div>
+          <div class="welcome-text">You're all set up. Tap any activity above to log your first session. Your AI Coach will have personalized advice after a few sessions.</div>
+        </div>`;
     } else {
       container.innerHTML = recent.map(buildSessionCard).join('');
     }
@@ -727,6 +776,24 @@ async function renderHistory(filter) {
   container.innerHTML = '<div class="loading-state">Loading...</div>';
   try {
     const allSessions = await getSessionsFromDB('all');
+
+    // Build dropdown with counts — only show types the user has sessions for
+    const typeCounts = {};
+    allSessions.forEach(s => {
+      typeCounts[s.type] = (typeCounts[s.type] || 0) + 1;
+    });
+
+    const typeLabels = { lifting: 'Lifting', bjj: 'BJJ', cardio: 'Cardio', yoga: 'Yoga', pilates: 'Pilates' };
+    const options = [
+      `<option value="all">All Sessions (${allSessions.length})</option>`,
+      ...Object.keys(typeCounts).sort().map(type =>
+        `<option value="${type}" ${filter === type ? 'selected' : ''}>${typeLabels[type] || capitalize(type)} (${typeCounts[type]})</option>`
+      )
+    ].join('');
+
+    document.getElementById('history-filter-select').innerHTML = options;
+    if (filter === 'all') document.getElementById('history-filter-select').value = 'all';
+
     const sessions = filter === 'all' ? allSessions : allSessions.filter(s => s.type === filter);
     if (sessions.length === 0) {
       container.innerHTML = `<div class="empty-state">No ${filter === 'all' ? '' : filter + ' '}sessions yet.</div>`;
@@ -738,10 +805,8 @@ async function renderHistory(filter) {
   }
 }
 
-window.filterHistory = async (btn) => {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  await renderHistory(btn.dataset.filter);
+window.filterHistory = async (select) => {
+  await renderHistory(select.value);
 };
 
 // ── Session Card ──
@@ -753,7 +818,10 @@ function buildSessionCard(session) {
 
   if (type === 'lifting') {
     const planLabel = session.planLabel ? `${session.planLabel} · ` : '';
-    summary = planLabel + ((session.exercises || []).map(e => e.name).join(', ') || 'Lifting session');
+    const exercises = (session.exercises || []).map(e => e.name);
+    const shown = exercises.slice(0, 3);
+    const extra = exercises.length > 3 ? ` +${exercises.length - 3} more` : '';
+    summary = planLabel + (shown.join(', ') + extra || 'Lifting session');
   } else if (type === 'bjj') {
     summary = `${session.duration} min · ${capitalize(session.sessionType)}`;
   } else if (type === 'yoga') {
@@ -1007,6 +1075,7 @@ function initYogaForm() {
   document.querySelectorAll('#view-log-yoga .toggle-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === 'vinyasa');
   });
+  watchFormDirty(['yoga-date', 'yoga-duration', 'yoga-notes']);
 }
 
 window.saveYoga = async () => {
@@ -1021,6 +1090,7 @@ window.saveYoga = async () => {
   btn.textContent = 'Saving...';
   btn.disabled = true;
   try {
+    clearFormDirty();
     await saveSessionToDB({ type: 'yoga', date, duration: parseInt(duration), style, notes });
     showToast('Yoga session logged! 🧘');
     navigate('dashboard');
@@ -1043,6 +1113,7 @@ function initCardioForm() {
   document.querySelectorAll('#view-log-cardio .toggle-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === 'run');
   });
+  watchFormDirty(['cardio-date', 'cardio-duration', 'cardio-distance', 'cardio-notes']);
 }
 
 window.saveCardio = async () => {
@@ -1059,6 +1130,7 @@ window.saveCardio = async () => {
   btn.textContent = 'Saving...';
   btn.disabled = true;
   try {
+    clearFormDirty();
     await saveSessionToDB({
       type: 'cardio',
       date,
@@ -1094,6 +1166,7 @@ function initPilatesForm() {
       (hiddenId === 'pilates-focus' && btn.dataset.value === 'core')
     );
   });
+  watchFormDirty(['pilates-date', 'pilates-duration', 'pilates-notes']);
 }
 
 window.savePilates = async () => {
@@ -1109,6 +1182,7 @@ window.savePilates = async () => {
   btn.textContent = 'Saving...';
   btn.disabled = true;
   try {
+    clearFormDirty();
     await saveSessionToDB({ type: 'pilates', date, duration: parseInt(duration), style, focus, notes });
     showToast('Pilates session logged! 🤸');
     navigate('dashboard');
