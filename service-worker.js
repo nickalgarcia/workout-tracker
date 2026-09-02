@@ -1,7 +1,7 @@
-// ── Train Log Service Worker ──
+// ── Mat Log Service Worker ──
 // Update this version number every time you deploy
 // This is what forces the home screen app to refresh
-const CACHE_VERSION = 'trainlog-v20260902152521';
+const CACHE_VERSION = 'matlog-v20260902152916';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Files to cache for offline/fast loading
@@ -21,6 +21,9 @@ const STATIC_FILES = [
   '/js/coach.js',
   '/js/focus.js',
   '/js/progress.js',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 // Install — cache static files

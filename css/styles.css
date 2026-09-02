@@ -78,7 +78,6 @@ body {
   padding: 4px 8px;
   line-height: 1;
 }
-.header-spacer { width: 40px; }
 .hidden { visibility: hidden; pointer-events: none; }
 
 /* ── Main / Views ── */
@@ -103,35 +102,6 @@ body {
   color: var(--text);
   line-height: 1.2;
 }
-.subgreeting {
-  color: var(--text-muted);
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-.action-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 32px;
-}
-.action-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 16px 14px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s, background 0.15s;
-  text-align: left;
-}
-.action-card:active { transform: scale(0.97); }
-.action-card.lifting:hover { border-color: var(--lifting); background: var(--accent-dim); }
-.action-card.bjj:hover { border-color: var(--bjj); background: var(--bjj-dim); }
-.action-card.cardio:hover { border-color: var(--cardio); background: var(--cardio-dim); }
-.card-icon { font-size: 28px; margin-bottom: 12px; }
 .card-label {
   font-family: var(--font-head);
   font-size: 15px;
@@ -139,7 +109,6 @@ body {
   color: var(--text);
   display: block;
 }
-.card-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; display: block; }
 
 .section-header {
   display: flex;
@@ -439,29 +408,6 @@ select.field-input option { background: var(--surface2); }
 }
 .delete-btn:hover { background: rgba(240,74,74,0.1); }
 
-/* ── Filter Row ── */
-.filter-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.filter-btn {
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: none;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.filter-btn.active {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-
 /* ── Detail View ── */
 .detail-header {
   margin-bottom: 24px;
@@ -585,14 +531,6 @@ select.field-input option { background: var(--surface2); }
   border-radius: 4px;
   margin-left: 6px;
   letter-spacing: 0.05em;
-}
-
-/* ── Streak ── */
-.streak-count {
-  font-size: 12px;
-  color: var(--accent);
-  margin-top: 6px;
-  font-family: var(--font-mono);
 }
 
 /* ── Welcome State ── */
@@ -787,14 +725,6 @@ select.field-input option { background: var(--surface2); }
   letter-spacing: 0.05em;
 }
 
-/* ── Detail Plan Label ── */
-.detail-plan-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  letter-spacing: 0.05em;
-}
-
 /* ── YouTube Button ── */
 .yt-btn {
   background: none;
@@ -869,189 +799,6 @@ select.field-input option { background: var(--surface2); }
   transition: background 0.15s;
 }
 .detail-saved-link:hover { background: var(--bjj-dim); }
-
-/* ── Onboarding Screen ── */
-#onboarding-screen {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  overflow-y: auto;
-  z-index: 150;
-  padding: 0 0 40px;
-}
-#onboarding-screen.hidden { display: none; }
-#onboarding-box {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 32px 20px 0;
-}
-.onboarding-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-.onboarding-skip-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-top: 12px;
-  display: block;
-  width: 100%;
-}
-
-/* ── Onboarding Form Elements ── */
-.ob-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.ob-checks {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.ob-check {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.ob-check input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.ob-check:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-.ob-goal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.ob-goal-btn {
-  padding: 12px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-}
-.ob-goal-btn.active {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-.ob-days-hint {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.field-hint {
-  color: var(--text-muted);
-  font-size: 11px;
-  margin-top: 6px;
-  line-height: 1.5;
-}
-.ob-days-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ob-days-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.ob-days-label {
-  font-size: 13px;
-  color: var(--text);
-  min-width: 70px;
-}
-.ob-days-select {
-  flex: 1;
-  padding: 10px 12px;
-  font-size: 13px;
-}
-
-/* ── Settings ── */
-.settings-intro {
-  margin-bottom: 24px;
-}
-.settings-intro-text {
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-/* ── User Menu Item ── */
-.user-menu-item {
-  width: 100%;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  padding: 10px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-  margin-bottom: 8px;
-  text-align: left;
-}
-.user-menu-item:hover { border-color: var(--accent); color: var(--accent); }
-
-/* ── Progress Guidance ── */
-.progress-guidance {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 24px 20px;
-  text-align: center;
-  margin-top: 8px;
-}
-.progress-guidance-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
-}
-.progress-guidance-title {
-  font-family: var(--font-head);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 10px;
-}
-.progress-guidance-text {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.7;
-  margin-bottom: 14px;
-}
-.progress-guidance-text strong { color: var(--accent); }
-.progress-guidance-tip {
-  font-size: 12px;
-  color: var(--text-muted);
-  background: var(--surface2);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  line-height: 1.5;
-}
 
 /* ── Coach ── */
 .coach-intro {

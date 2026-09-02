@@ -92,7 +92,7 @@ const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'focus', 'progress', 'coach'];
 const LOG_VIEWS = ['log-lifting', 'log-mat', 'log-cardio'];
 
 const TITLES = {
-  'dashboard': 'TRAIN LOG', 'log-lifting': 'LOG LIFTING',
+  'dashboard': 'MAT LOG', 'log-lifting': 'LOG LIFTING',
   'log-mat': 'LOG MAT SESSION', 'log-cardio': 'LOG CARDIO',
   'history': 'HISTORY', 'detail': 'SESSION',
   'focus': 'FOCUS', 'progress': 'PROGRESS',
@@ -139,7 +139,7 @@ export async function navigate(viewName) {
   if (isTopLevel) viewHistory = [viewName];
   else if (viewHistory[viewHistory.length - 1] !== viewName) viewHistory.push(viewName);
 
-  document.getElementById('page-title').textContent = TITLES[viewName] || 'TRAIN LOG';
+  document.getElementById('page-title').textContent = TITLES[viewName] || 'MAT LOG';
 
   const init = viewInitialisers[viewName];
   if (init) await init();
