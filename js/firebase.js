@@ -49,6 +49,30 @@ const PROFILE = {
   weeklyTargets: { mat: 3, support: 2 }
 };
 
+// ── Schema ──
+// See docs/SCHEMA.md. Two session types: 'mat' and 'support'.
+const SCHEMA_VERSION = 2;
+
+// Fixed vocabulary for mat positions. Order matters — it is the display
+// order, running from bottom/defensive through to top/offensive. This is a
+// closed list on purpose: `positions` is a multi-select from exactly these
+// strings and never free text, because that is what makes it aggregate.
+// Technique nuance goes in `techniques`, which stays free text.
+export const POSITIONS = [
+  'Pre-guard / seated',
+  'Closed guard (bottom)',
+  'Half guard (bottom)',
+  'Open guard (bottom)',
+  'Guard passing (top)',
+  'Side control (top)',
+  'Side control (bottom)',
+  'Mount (top)',
+  'Mount (bottom)',
+  'Back attacks',
+  'Back defense',
+  'Standing / takedowns'
+];
+
 // ── Current user ──
 let currentUser = null;
 
@@ -317,8 +341,6 @@ window.saveLifting = async () => {
   const exercises = collectExercises();
   if (exercises.length === 0) { showToast('Add at least one exercise'); return; }
   const notes = document.getElementById('lifting-notes').value.trim();
-  const plan = document.getElementById('selected-plan').value;
-  const planLabel = TRAINING_PLANS[plan]?.label || 'Free Session';
 
   const btn = document.getElementById('save-lifting-btn');
   btn.textContent = 'Saving...';
@@ -326,7 +348,18 @@ window.saveLifting = async () => {
 
   try {
     clearFormDirty();
-    await saveSessionToDB({ type: 'lifting', date, exercises, notes, plan, planLabel });
+    await saveSessionToDB({
+      schemaVersion: SCHEMA_VERSION,
+      type: 'support',
+      subtype: 'lifting',
+      date,
+      minutes: null,          // the lifting form has no duration input yet
+      exercises,
+      cardioType: null,
+      distance: null,
+      distanceUnit: null,
+      notes
+    });
     showToast('Session saved! 💪');
     navigate('dashboard');
   } catch (e) {
@@ -413,8 +446,25 @@ window.saveBJJ = async () => {
 
   try {
     clearFormDirty();
-    await saveSessionToDB({ type: 'bjj', date, duration: parseInt(duration), sessionType, techniques, notes });
-    showToast('BJJ session logged! 🥋');
+    await saveSessionToDB({
+      schemaVersion: SCHEMA_VERSION,
+      type: 'mat',
+      date,
+      minutes: parseInt(duration),
+      // The rebuilt mat form collects the rest. Until then these are
+      // written empty rather than omitted, so every v2 doc has one shape.
+      rounds: null,
+      sessionType,
+      positions: [],
+      techniques,
+      focusId: null,
+      focusAttempted: null,
+      worked: '',
+      beat: '',
+      readiness: null,
+      notes
+    });
+    showToast('Mat session logged! 🥋');
     navigate('dashboard');
   } catch (e) {
     console.error(e);
@@ -544,24 +594,27 @@ async function renderHistory(filter) {
   try {
     const allSessions = await getSessionsFromDB('all');
 
-    // Build dropdown with counts — only show types the user has sessions for
-    const typeCounts = {};
+    // Build dropdown with counts — only show kinds that have sessions.
+    // Keyed on kind so v1 'bjj' and v2 'mat' docs land in the same bucket.
+    const kindCounts = {};
     allSessions.forEach(s => {
-      typeCounts[s.type] = (typeCounts[s.type] || 0) + 1;
+      const k = sessionKind(s);
+      kindCounts[k] = (kindCounts[k] || 0) + 1;
     });
 
-    const typeLabels = { lifting: 'Lifting', bjj: 'BJJ', cardio: 'Cardio' };
+    const kindLabels = { mat: 'Mat', lifting: 'Lifting', cardio: 'Cardio' };
+    const order = ['mat', 'lifting', 'cardio'];
     const options = [
       `<option value="all">All Sessions (${allSessions.length})</option>`,
-      ...Object.keys(typeCounts).sort().map(type =>
-        `<option value="${type}" ${filter === type ? 'selected' : ''}>${typeLabels[type] || capitalize(type)} (${typeCounts[type]})</option>`
+      ...order.filter(k => kindCounts[k]).map(k =>
+        `<option value="${k}" ${filter === k ? 'selected' : ''}>${kindLabels[k]} (${kindCounts[k]})</option>`
       )
     ].join('');
 
     document.getElementById('history-filter-select').innerHTML = options;
     if (filter === 'all') document.getElementById('history-filter-select').value = 'all';
 
-    const sessions = filter === 'all' ? allSessions : allSessions.filter(s => s.type === filter);
+    const sessions = filter === 'all' ? allSessions : allSessions.filter(s => sessionKind(s) === filter);
     if (sessions.length === 0) {
       container.innerHTML = `<div class="empty-state">No ${filter === 'all' ? '' : filter + ' '}sessions yet.</div>`;
     } else {
@@ -576,28 +629,48 @@ window.filterHistory = async (select) => {
   await renderHistory(select.value);
 };
 
+// ── v1 / v2 bridge ──
+// v2 stores type 'mat' | 'support' (+ subtype) with `minutes`.
+// v1 stored type 'bjj' | 'lifting' | 'cardio' with `duration`.
+// These collapse both into one shape so rendering does not care which it
+// is holding. The v1 fallbacks come out once the migration has run.
+function sessionKind(session) {
+  const t = session.type;
+  if (t === 'mat' || t === 'bjj') return 'mat';
+  if (t === 'support') return session.subtype === 'cardio' ? 'cardio' : 'lifting';
+  return t;                                     // v1 'lifting' | 'cardio'
+}
+
+function sessionMinutes(session) {
+  return session.minutes ?? session.duration ?? null;
+}
+
+const KIND_LABELS = { mat: 'MAT', lifting: 'LIFTING', cardio: 'CARDIO' };
+const KIND_COLORS = { mat: 'bjj', lifting: 'lifting', cardio: 'cardio-type' };
+
 // ── Session Card ──
 function buildSessionCard(session) {
-  const type = session.type;
+  const kind = sessionKind(session);
+  const mins = sessionMinutes(session);
   const dateStr = formatDate(session.date);
   let summary = '';
-  let typeLabel = type.toUpperCase();
 
-  if (type === 'lifting') {
-    const planLabel = session.planLabel ? `${session.planLabel} · ` : '';
+  if (kind === 'lifting') {
     const exercises = (session.exercises || []).map(e => e.name);
     const shown = exercises.slice(0, 3);
     const extra = exercises.length > 3 ? ` +${exercises.length - 3} more` : '';
-    summary = planLabel + (shown.join(', ') + extra || 'Lifting session');
-  } else if (type === 'bjj') {
-    summary = `${session.duration} min · ${capitalize(session.sessionType)}`;
-  } else if (type === 'cardio') {
+    summary = shown.join(', ') + extra || 'Lifting session';
+  } else if (kind === 'mat') {
+    const parts = [`${mins} min`, capitalize(session.sessionType)];
+    if (session.rounds) parts.push(`${session.rounds} rounds`);
+    summary = parts.filter(Boolean).join(' · ');
+  } else if (kind === 'cardio') {
     const dist = session.distance ? ` · ${session.distance} ${session.distanceUnit}` : '';
-    summary = `${session.duration} min · ${capitalize(session.cardioType)}${dist}`;
+    summary = `${mins} min · ${capitalize(session.cardioType)}${dist}`;
   }
 
-  const typeColors = { lifting: 'lifting', bjj: 'bjj', cardio: 'cardio-type' };
-  const colorClass = typeColors[type] || 'lifting';
+  const typeLabel = KIND_LABELS[kind] || String(kind).toUpperCase();
+  const colorClass = KIND_COLORS[kind] || 'lifting';
 
   return `
     <div class="session-card" onclick="window.openDetail('${session.id}')">
@@ -624,11 +697,12 @@ window.openDetail = async (id) => {
 };
 
 function buildDetailHTML(session) {
-  const type = session.type;
+  const kind = sessionKind(session);
+  const mins = sessionMinutes(session);
   const dateStr = formatDateLong(session.date);
   let body = '';
 
-  if (type === 'lifting') {
+  if (kind === 'lifting') {
     const exercises = (session.exercises || []).map(ex => {
       const sets = (ex.sets || []).map((set, i) => `
         <div class="detail-set">
@@ -653,7 +727,7 @@ function buildDetailHTML(session) {
       </div>
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
-  } else if (type === 'bjj') {
+  } else if (kind === 'mat') {
     const techniques = (session.techniques || []).map(t => {
       const name = typeof t === 'string' ? t : t.name;
       const link = typeof t === 'object' ? t.link : null;
@@ -669,23 +743,35 @@ function buildDetailHTML(session) {
           </div>
         </div>`;
     }).join('');
+    const positions = (session.positions || []).length
+      ? `<div class="detail-section"><div class="detail-section-title">Positions</div><div class="detail-notes">${session.positions.join(' · ')}</div></div>`
+      : '';
+    const reflections = [
+      session.worked ? `<div class="detail-meta-item"><span>What worked</span>${session.worked}</div>` : '',
+      session.beat ? `<div class="detail-meta-item"><span>What beat me</span>${session.beat}</div>` : ''
+    ].filter(Boolean).join('');
     body = `
       <div class="detail-section">
         <div class="detail-section-title">Details</div>
         <div class="detail-meta">
-          <div class="detail-meta-item"><span>Duration</span>${session.duration} min</div>
+          <div class="detail-meta-item"><span>Duration</span>${mins} min</div>
           <div class="detail-meta-item"><span>Type</span>${capitalize(session.sessionType)}</div>
+          ${session.rounds ? `<div class="detail-meta-item"><span>Rounds</span>${session.rounds}</div>` : ''}
+          ${session.readiness ? `<div class="detail-meta-item"><span>Readiness</span>${session.readiness}/5</div>` : ''}
+          ${session.focusAttempted ? `<div class="detail-meta-item"><span>Focus</span>${capitalize(session.focusAttempted)}</div>` : ''}
         </div>
       </div>
+      ${positions}
+      ${reflections ? `<div class="detail-section"><div class="detail-section-title">Reflection</div><div class="detail-meta">${reflections}</div></div>` : ''}
       ${techniques ? `<div class="detail-section"><div class="detail-section-title">Techniques</div><div class="detail-technique-list">${techniques}</div></div>` : ''}
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
-  } else if (type === 'cardio') {
+  } else if (kind === 'cardio') {
     body = `
       <div class="detail-section">
         <div class="detail-section-title">Details</div>
         <div class="detail-meta">
-          <div class="detail-meta-item"><span>Duration</span>${session.duration} min</div>
+          <div class="detail-meta-item"><span>Duration</span>${mins} min</div>
           <div class="detail-meta-item"><span>Type</span>${capitalize(session.cardioType)}</div>
           ${session.distance ? `<div class="detail-meta-item"><span>Distance</span>${session.distance} ${session.distanceUnit}</div>` : ''}
         </div>
@@ -694,13 +780,11 @@ function buildDetailHTML(session) {
     `;
   }
 
-  const typeLabels = { lifting: 'LIFTING', bjj: 'BJJ', cardio: 'CARDIO' };
-  const typeColorClass = type;
+  const detailColor = { mat: 'bjj', lifting: 'lifting', cardio: 'cardio' };
 
   return `
     <div class="detail-header">
-      <div class="detail-type ${typeColorClass}">${typeLabels[type] || type.toUpperCase()}</div>
-      ${session.planLabel ? `<div class="detail-plan-label">${session.planLabel}</div>` : ''}
+      <div class="detail-type ${detailColor[kind] || kind}">${KIND_LABELS[kind] || String(kind).toUpperCase()}</div>
       <div class="detail-date">${dateStr}</div>
     </div>
     ${body}
@@ -721,7 +805,7 @@ window.deleteSession = async (id) => {
 // ── Progress ──
 async function renderProgressView() {
   const allSessions = await getSessionsFromDB('all');
-  const sessions = allSessions.filter(s => s.type === 'lifting');
+  const sessions = allSessions.filter(s => sessionKind(s) === 'lifting');
   const names = new Set();
   sessions.forEach(s => (s.exercises || []).forEach(e => { if (e.name) names.add(e.name); }));
 
@@ -765,7 +849,7 @@ window.renderProgress = async () => {
 
   container.innerHTML = '<div class="loading-state">Loading...</div>';
   const allSessions = await getSessionsFromDB('all');
-  const sessions = allSessions.filter(s => s.type === 'lifting');
+  const sessions = allSessions.filter(s => sessionKind(s) === 'lifting');
 
   const data = sessions
     .map(s => {
@@ -835,9 +919,12 @@ window.saveCardio = async () => {
   try {
     clearFormDirty();
     await saveSessionToDB({
-      type: 'cardio',
+      schemaVersion: SCHEMA_VERSION,
+      type: 'support',
+      subtype: 'cardio',
       date,
-      duration: parseInt(duration),
+      minutes: parseInt(duration),
+      exercises: [],
       cardioType,
       distance: distance ? parseFloat(distance) : null,
       distanceUnit: distance ? distanceUnit : null,
@@ -906,13 +993,13 @@ window.getCoachingAdvice = async () => {
 
     const formatted = formatCoachResponse(advice);
     const sessionCount = coachSessions.length;
-    const liftCount = coachSessions.filter(s => s.type === 'lifting').length;
-    const bjjCount = coachSessions.filter(s => s.type === 'bjj').length;
+    const matCount = coachSessions.filter(s => sessionKind(s) === 'mat').length;
+    const supportCount = coachSessions.length - matCount;
 
     output.innerHTML = `
       <div class="coach-meta">
         Based on your last ${sessionCount} sessions —
-        ${liftCount} lifting, ${bjjCount} BJJ
+        ${matCount} mat, ${supportCount} support
       </div>
       <div class="coach-advice">${formatted}</div>
       <button class="coach-refresh-btn" onclick="window.getCoachingAdvice()">↺ Refresh Analysis</button>
