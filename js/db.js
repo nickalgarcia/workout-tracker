@@ -101,6 +101,7 @@ export async function signOut() {
 export function watchAuth(callback) {
   onAuthStateChanged(auth, (user) => {
     _currentUser = user;
+    invalidateSessions();
     callback(user);
   });
 }
@@ -111,10 +112,22 @@ function sessionsRef() {
   return collection(db, 'users', _currentUser.uid, 'sessions');
 }
 
+// ── Session cache ──
+// Views call getSessions() two or three times per render, and the progress
+// view needs the whole collection for its aggregates. Rather than page or
+// limit, hold the last result in memory and drop it on any write. It
+// survives navigation within a session and never outlives the tab.
+let sessionCache = null;
+
+function invalidateSessions() {
+  sessionCache = null;
+}
+
 /** Save a session. Returns the new document id. */
 export async function saveSession(session) {
   session.createdAt = serverTimestamp();
   const docRef = await addDoc(sessionsRef(), session);
+  invalidateSessions();
   return docRef.id;
 }
 
@@ -131,15 +144,25 @@ export async function getSessions() {
   // Views are only reachable after sign-in, but a read that races a
   // sign-out should return nothing rather than throw.
   if (!_currentUser) return [];
+  if (sessionCache) return sessionCache;
   const snapshot = await getDocs(query(sessionsRef(), orderBy('createdAt', 'desc')));
-  return snapshot.docs
+  sessionCache = snapshot.docs
     .map(d => ({ id: d.id, ...d.data() }))
     .filter(s => !s.archived);
+  return sessionCache;
+}
+
+/** One session by id. Reads the single document rather than the collection. */
+export async function getSession(id) {
+  if (!_currentUser) return null;
+  const snap = await getDoc(doc(db, 'users', _currentUser.uid, 'sessions', id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
 export async function deleteSession(id) {
   if (!_currentUser) throw new Error('Not signed in — cannot delete.');
   await deleteDoc(doc(db, 'users', _currentUser.uid, 'sessions', id));
+  invalidateSessions();
 }
 
 // ── Focus ──

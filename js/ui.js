@@ -7,7 +7,7 @@
 // not import them — it reaches view initialisers through registerView(),
 // which is what keeps the dependency graph acyclic.
 
-import { PROFILE, getSessions, deleteSession } from './db.js';
+import { PROFILE, getSessions, getSession, deleteSession } from './db.js';
 
 // ── Escaping ──
 // Everything the user typed passes through this before it reaches
@@ -319,8 +319,7 @@ export function buildDetailHTML(session) {
 }
 
 export async function openDetail(id) {
-  const sessions = await getSessions();
-  const session = sessions.find(s => s.id === id);
+  const session = await getSession(id);
   if (!session) return;
 
   document.getElementById('detail-content').innerHTML = buildDetailHTML(session);
@@ -428,92 +427,4 @@ export async function renderHistory(filter = 'all') {
     console.error(e);
     container.innerHTML = `<div class="empty-state">Error loading sessions.</div>`;
   }
-}
-
-// ── Progress ──
-export async function renderProgressView() {
-  const allSessions = await getSessions();
-  const sessions = allSessions.filter(s => sessionKind(s) === 'lifting');
-  const names = new Set();
-  sessions.forEach(s => (s.exercises || []).forEach(e => { if (e.name) names.add(e.name); }));
-
-  const select = document.getElementById('progress-exercise');
-  select.innerHTML = '<option value="">Select an exercise...</option>' +
-    Array.from(names).sort().map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-
-  const sessionCount = sessions.length;
-  let message = '';
-
-  if (sessionCount === 0) {
-    message = `
-      <div class="progress-guidance">
-        <div class="progress-guidance-icon">📋</div>
-        <div class="progress-guidance-title">No lifting sessions yet</div>
-        <div class="progress-guidance-text">Log your first workout to start tracking progress. Your data will appear here after your first session.</div>
-      </div>`;
-  } else if (sessionCount < 3) {
-    const remaining = 3 - sessionCount;
-    message = `
-      <div class="progress-guidance">
-        <div class="progress-guidance-icon">📈</div>
-        <div class="progress-guidance-title">Keep going — you're ${sessionCount === 1 ? 'just getting started' : 'almost there'}!</div>
-        <div class="progress-guidance-text">Progress tracking becomes meaningful after <strong>3 sessions</strong> of the same exercise. Log ${remaining} more session${remaining > 1 ? 's' : ''} to start seeing trends.</div>
-        <div class="progress-guidance-tip">💡 You can still select an exercise above to see your starting point.</div>
-      </div>`;
-  } else {
-    message = `<div class="progress-empty">Select an exercise above to see your progress.</div>`;
-  }
-
-  document.getElementById('progress-content').innerHTML = message;
-}
-
-export async function renderProgress() {
-  const name = document.getElementById('progress-exercise').value;
-  const container = document.getElementById('progress-content');
-  if (!name) {
-    container.innerHTML = `<div class="progress-empty">Select an exercise to see your progress.</div>`;
-    return;
-  }
-
-  container.innerHTML = '<div class="loading-state">Loading...</div>';
-  const allSessions = await getSessions();
-  const sessions = allSessions.filter(s => sessionKind(s) === 'lifting');
-
-  const data = sessions
-    .map(s => {
-      const ex = (s.exercises || []).find(e => e.name === name);
-      if (!ex) return null;
-      const bestSet = (ex.sets || []).reduce((best, set) =>
-        parseFloat(set.weight) > parseFloat(best.weight || 0) ? set : best, {});
-      return { date: s.date, sets: ex.sets, bestSet };
-    })
-    .filter(Boolean)
-    .reverse();
-
-  if (data.length === 0) {
-    container.innerHTML = `<div class="progress-empty">No data found for ${escapeHtml(name)}.</div>`;
-    return;
-  }
-
-  const maxWeight = Math.max(...data.map(d => parseFloat(d.bestSet.weight || 0)));
-
-  const rows = data.map(d => {
-    const w = parseFloat(d.bestSet.weight || 0);
-    const isPR = w === maxWeight && maxWeight > 0;
-    const totalSets = (d.sets || []).length;
-    const totalReps = (d.sets || []).reduce((sum, s) => sum + (parseInt(s.reps) || 0), 0);
-    return `
-      <tr>
-        <td>${formatDate(d.date)}</td>
-        <td>${totalSets} × ${totalSets ? Math.round(totalReps / totalSets) : '—'}</td>
-        <td>${w ? w + ' lbs' : '—'} ${isPR ? '<span class="pr-badge">PR</span>' : ''}</td>
-      </tr>`;
-  }).join('');
-
-  container.innerHTML = `
-    <table class="progress-table">
-      <thead><tr><th>Date</th><th>Sets × Reps</th><th>Best Weight</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
 }

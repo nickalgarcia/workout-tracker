@@ -8,20 +8,20 @@
 import { signIn, signOut, watchAuth } from './db.js';
 import {
   navigate, goBack, showToast, registerView, registerDashboardCard,
-  isFormDirty, openDetail, renderDashboard, renderHistory,
-  renderProgressView, renderProgress
+  isFormDirty, openDetail, renderDashboard, renderHistory
 } from './ui.js';
 import { initMatForm, wireMat } from './mat.js';
 import { initLiftingForm, initCardioForm, wireSupport } from './support.js';
 import { initCoachView, wireCoach } from './coach.js';
 import { initFocusView, wireFocus, renderFocusCard } from './focus.js';
+import { initProgressView, wireProgress } from './progress.js';
 
 // ── View registry ──
 // navigate() dispatches through this, which is what lets ui.js stay
 // unaware of the feature modules.
 registerView('dashboard', renderDashboard);
 registerView('history', () => renderHistory('all'));
-registerView('progress', renderProgressView);
+registerView('progress', initProgressView);
 registerView('coach', initCoachView);
 registerView('log-lifting', initLiftingForm);
 registerView('log-mat', initMatForm);
@@ -78,13 +78,12 @@ document.addEventListener('click', (e) => {
 
 document.getElementById('history-filter-select')
   .addEventListener('change', (e) => renderHistory(e.target.value));
-document.getElementById('progress-exercise')
-  .addEventListener('change', renderProgress);
 
 wireMat();
 wireSupport();
 wireCoach();
 wireFocus();
+wireProgress();
 
 // ── Auth state ──
 watchAuth((user) => {

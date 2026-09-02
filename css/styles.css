@@ -1509,3 +1509,128 @@ select.field-input option { background: var(--surface2); }
   cursor: pointer;
 }
 .notes-toggle:active { opacity: 0.7; }
+
+/* ── Progress ── */
+
+.stat-strip { display: flex; gap: 10px; margin-bottom: 20px; }
+.stat-tile {
+  flex: 1;
+  padding: 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-align: center;
+}
+.stat-num {
+  display: block;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--accent);
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
+.tab-btn {
+  flex: 1;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.tab-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+
+.progress-section { margin-bottom: 28px; }
+.progress-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.progress-section-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.progress-section-head .progress-section-title { margin-bottom: 0; }
+
+.range-toggle { display: flex; gap: 6px; }
+.range-btn {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+.range-btn.active { border-color: var(--accent); color: var(--accent); }
+
+/* Recurring themes */
+.theme-list {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  margin-bottom: 14px;
+}
+.theme-row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; }
+.theme-phrase { font-size: 13px; }
+.theme-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.theme-none {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* The problem log itself */
+.problem-row { padding: 11px 0; border-bottom: 1px solid var(--border); }
+.problem-row:last-child { border-bottom: none; }
+.problem-text { font-size: 14px; line-height: 1.45; margin-bottom: 4px; }
+.problem-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+
+/* Position coverage bars */
+.coverage-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.coverage-label { flex: 0 0 40%; font-family: var(--font-mono); font-size: 11px; }
+.coverage-track { flex: 1; height: 8px; border-radius: 4px; background: var(--surface2); overflow: hidden; }
+.coverage-bar { height: 100%; border-radius: 4px; background: var(--bjj); }
+.coverage-count {
+  flex: 0 0 22px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.coverage-zero { opacity: 0.38; }
+
+/* Cardio minutes per week */
+.week-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.week-label { flex: 0 0 30%; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.week-mins {
+  flex: 0 0 40px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cardio-bar { background: var(--cardio); }
