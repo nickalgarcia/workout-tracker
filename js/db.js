@@ -18,6 +18,8 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
   query,
   orderBy,
   serverTimestamp
@@ -138,4 +140,59 @@ export async function getSessions() {
 export async function deleteSession(id) {
   if (!_currentUser) throw new Error('Not signed in — cannot delete.');
   await deleteDoc(doc(db, 'users', _currentUser.uid, 'sessions', id));
+}
+
+// ── Focus ──
+// The active focus lives in one document at users/{uid}/meta/focus.
+// Past focuses move to the archive subcollection underneath it, so the
+// history is a single collection read and only when that view is opened.
+//
+//   users/{uid}/meta/focus                 the active focus
+//   users/{uid}/meta/focus/archive/{id}    past focuses
+
+function focusRef() {
+  if (!_currentUser) throw new Error('Not signed in — no focus to reach.');
+  return doc(db, 'users', _currentUser.uid, 'meta', 'focus');
+}
+
+function focusArchiveRef() {
+  if (!_currentUser) throw new Error('Not signed in — no focus archive to reach.');
+  return collection(db, 'users', _currentUser.uid, 'meta', 'focus', 'archive');
+}
+
+export function newFocusId() {
+  return crypto?.randomUUID?.() ?? `f_${Date.now().toString(36)}`;
+}
+
+/** The active focus, or null if none has been set. */
+export async function getActiveFocus() {
+  if (!_currentUser) return null;
+  const snap = await getDoc(focusRef());
+  return snap.exists() ? snap.data() : null;
+}
+
+/** Create or replace the active focus. */
+export async function setActiveFocus(focus) {
+  await setDoc(focusRef(), focus);
+}
+
+/**
+ * Archive the current focus under `endedAt` and make `next` the active one.
+ * The archive copy is written first, so a failure part-way through cannot
+ * lose the old focus.
+ */
+export async function replaceFocus(current, endedAt, next) {
+  if (current) {
+    await setDoc(doc(focusArchiveRef(), current.id), {
+      ...current, endedAt, active: false
+    });
+  }
+  await setDoc(focusRef(), next);
+}
+
+/** Past focuses, most recently ended first. */
+export async function getFocusArchive() {
+  if (!_currentUser) return [];
+  const snapshot = await getDocs(query(focusArchiveRef(), orderBy('endedAt', 'desc')));
+  return snapshot.docs.map(d => d.data());
 }

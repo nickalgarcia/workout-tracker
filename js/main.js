@@ -7,12 +7,14 @@
 
 import { signIn, signOut, watchAuth } from './db.js';
 import {
-  navigate, goBack, showToast, registerView, isFormDirty, openDetail,
-  renderDashboard, renderHistory, renderProgressView, renderProgress
+  navigate, goBack, showToast, registerView, registerDashboardCard,
+  isFormDirty, openDetail, renderDashboard, renderHistory,
+  renderProgressView, renderProgress
 } from './ui.js';
 import { initMatForm, wireMat } from './mat.js';
 import { initLiftingForm, initCardioForm, wireSupport } from './support.js';
 import { initCoachView, wireCoach } from './coach.js';
+import { initFocusView, wireFocus, renderFocusCard } from './focus.js';
 
 // ── View registry ──
 // navigate() dispatches through this, which is what lets ui.js stay
@@ -24,7 +26,11 @@ registerView('coach', initCoachView);
 registerView('log-lifting', initLiftingForm);
 registerView('log-bjj', initMatForm);
 registerView('log-cardio', initCardioForm);
-// 'focus' and 'detail' need no initialiser yet.
+registerView('focus', initFocusView);
+// 'detail' needs no initialiser — openDetail() fills it before navigating.
+
+// The dashboard's focus card, owned by focus.js.
+registerDashboardCard(renderFocusCard);
 
 // ── User menu ──
 function showUserMenu() {
@@ -78,6 +84,7 @@ document.getElementById('progress-exercise')
 wireMat();
 wireSupport();
 wireCoach();
+wireFocus();
 
 // ── Auth state ──
 watchAuth((user) => {

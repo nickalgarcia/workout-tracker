@@ -58,6 +58,7 @@
           <p class="subgreeting">Ready to put in work?</p>
           <p class="streak-count" id="streak-count"></p>
         </div>
+        <div id="focus-card"></div>
         <div class="action-cards">
           <button class="action-card lifting" data-navigate="log-lifting">
             <span class="card-icon">🏋️</span>
@@ -132,12 +133,22 @@
         </div>
         <div class="form-section">
           <label class="field-label">Session Type</label>
-          <div class="toggle-group">
+          <div class="toggle-group" id="mat-type-toggle">
             <button class="toggle-btn active" data-value="both">Both</button>
             <button class="toggle-btn" data-value="drilling">Drilling</button>
             <button class="toggle-btn" data-value="sparring">Sparring</button>
           </div>
           <input type="hidden" id="bjj-type" value="both" />
+        </div>
+        <div class="form-section" id="mat-focus-section">
+          <label class="field-label">Did you get to your focus?</label>
+          <div class="focus-prompt" id="mat-focus-title"></div>
+          <div class="toggle-group" id="mat-focus-toggle">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="partly">Partly</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+          <input type="hidden" id="bjj-focus-attempted" value="" />
         </div>
         <div class="form-section">
           <label class="field-label">Techniques Worked On</label>
@@ -246,10 +257,10 @@
         </div>
       </section>
 
-      <!-- Focus (stub — filled in by the focus feature) -->
+      <!-- Focus -->
       <section id="view-focus" class="view">
         <div id="focus-content">
-          <div class="empty-state">Focus</div>
+          <div class="loading-state">Loading...</div>
         </div>
       </section>
 

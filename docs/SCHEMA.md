@@ -7,8 +7,9 @@ sign-in exists for cross-device sync, not multi-tenancy.
 
 ```
 users/{uid}/
-  sessions/{sessionId}     one training session — mat or support
-  meta/focus               the active focus (see the focus feature)
+  sessions/{sessionId}          one training session — mat or support
+  meta/focus                    the active focus
+  meta/focus/archive/{focusId}  past focuses
 ```
 
 There are **two session types**. Jiu-jitsu is the point of the app; lifting
@@ -103,6 +104,45 @@ every historical set.
 
 ---
 
+## Focus
+
+The thing currently being worked on. Exactly one is active at a time; the
+rest live in an archive subcollection underneath it, so reading the history
+is a single collection read and only when that view is opened.
+
+`users/{uid}/meta/focus` — the active focus:
+
+```js
+{
+  id: string,                // stable; mat sessions store it in focusId
+  title: string,             // "Closed guard: overhook + head control"
+  description: string,       // what you are actually trying to do
+  startedAt: 'YYYY-MM-DD',
+  endedAt: null,
+  active: true
+}
+```
+
+`users/{uid}/meta/focus/archive/{focusId}` — the same shape, with
+`endedAt` set to the day it was replaced and `active: false`.
+
+### Attempt rate
+
+Computed, never stored, so it stays correct as sessions are added or edited.
+
+- **Denominator**: mat sessions whose `focusId` matches that focus.
+- **Numerator**: those where `focusAttempted` is `'yes'` or `'partly'`.
+
+`'partly'` counts as an attempt. Getting partway to the thing you were
+working on is not the same as not trying, and a metric that treats them
+the same discourages logging honestly.
+
+Sessions logged before a focus existed have `focusId: null` and are counted
+against nothing. Support sessions never count. Because `focusId` is stamped
+at save time, a focus's rate stays fixed once it is archived.
+
+---
+
 ## Archived documents
 
 Yoga and pilates sessions are no longer supported. The migration sets
@@ -134,6 +174,10 @@ not oversights.
   duration input — v1 never collected one. New lifting sessions therefore
   write `null` until a field is added. Cardio and mat sessions both have a
   real minutes input.
-- **`positions`, `rounds`, `worked`, `beat`, `readiness`, `focusId` and
-  `focusAttempted` are written empty/null** by the current mat form, which is
-  still the old BJJ form. The rebuilt mat form collects them.
+- **`positions`, `rounds`, `worked`, `beat` and `readiness` are written
+  empty/null** by the current mat form, which is still the old BJJ form. The
+  rebuilt mat form collects them.
+- **`focusId` and `focusAttempted` are live.** The mat form asks "Did you get
+  to your focus?" whenever a focus is set, and stamps the active focus id.
+  The field is hidden entirely when no focus exists — there is nothing to
+  answer about — and it does not block saving.

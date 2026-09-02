@@ -107,6 +107,15 @@ export function registerView(name, initFn) {
   viewInitialisers[name] = initFn;
 }
 
+// The dashboard's focus card is owned by focus.js, which imports from here.
+// Registering it rather than importing it is what keeps that from being a
+// cycle — same reason as registerView above.
+let dashboardCardRenderer = null;
+
+export function registerDashboardCard(fn) {
+  dashboardCardRenderer = fn;
+}
+
 let viewHistory = ['dashboard'];
 
 export async function navigate(viewName) {
@@ -343,6 +352,10 @@ export async function renderDashboard() {
 
   try {
     const allSessions = await getSessions();
+
+    if (dashboardCardRenderer) {
+      await dashboardCardRenderer(document.getElementById('focus-card'), allSessions);
+    }
 
     // Streak — unique training days in the last 7
     const today = new Date();

@@ -5,8 +5,8 @@ import { SCHEMA_VERSION, saveSession } from './db.js';
 import {
   todayStr, showToast, watchFormDirty, clearFormDirty, navigate, selectToggle
 } from './ui.js';
+import { loadActiveFocus, currentFocus } from './focus.js';
 
-const VIEW = '#view-log-bjj';
 
 function techniqueRowHTML() {
   return `
@@ -68,6 +68,11 @@ async function saveMat() {
   const techniques = collectTechniques();
   const notes = document.getElementById('bjj-notes').value.trim();
 
+  // Stamp the focus that was active when this session was logged, so the
+  // attempt rate stays attached to the right focus after it is replaced.
+  const focus = currentFocus();
+  const focusAttempted = document.getElementById('bjj-focus-attempted').value || null;
+
   const btn = document.getElementById('save-bjj-btn');
   btn.textContent = 'Saving...';
   btn.disabled = true;
@@ -85,8 +90,8 @@ async function saveMat() {
       sessionType,
       positions: [],
       techniques,
-      focusId: null,
-      focusAttempted: null,
+      focusId: focus?.id ?? null,
+      focusAttempted,
       worked: '',
       beat: '',
       readiness: null,
@@ -103,18 +108,37 @@ async function saveMat() {
   }
 }
 
+/**
+ * Show the active focus above the yes/partly/no buttons, or hide the whole
+ * field when no focus is set — there is nothing to answer about.
+ */
+async function initFocusField() {
+  const section = document.getElementById('mat-focus-section');
+  const focus = await loadActiveFocus();
+
+  section.classList.toggle('hidden', !focus);
+  document.getElementById('bjj-focus-attempted').value = '';
+  document.querySelectorAll('#mat-focus-toggle .toggle-btn')
+    .forEach(b => b.classList.remove('active'));
+
+  if (focus) {
+    document.getElementById('mat-focus-title').textContent = focus.title;
+  }
+}
+
 /** Reset the form. Called on every navigation into the view. */
-export function initMatForm() {
+export async function initMatForm() {
   document.getElementById('bjj-date').value = todayStr();
   document.getElementById('bjj-duration').value = '';
   document.getElementById('bjj-notes').value = '';
   document.getElementById('bjj-type').value = 'both';
-  document.querySelectorAll(`${VIEW} .toggle-btn`).forEach(btn => {
+  document.querySelectorAll('#mat-type-toggle .toggle-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === 'both');
   });
   document.getElementById('technique-list').innerHTML = '';
   addTechniqueRow();
   watchFormDirty(['bjj-date', 'bjj-duration', 'bjj-notes']);
+  await initFocusField();
 }
 
 /** One-time listener wiring. Called once at boot. */
@@ -122,9 +146,14 @@ export function wireMat() {
   document.getElementById('add-technique-btn').addEventListener('click', addTechniqueRow);
   document.getElementById('save-bjj-btn').addEventListener('click', saveMat);
 
-  document.querySelector(`${VIEW} .toggle-group`).addEventListener('click', (e) => {
+  document.getElementById('mat-type-toggle').addEventListener('click', (e) => {
     const btn = e.target.closest('.toggle-btn');
     if (btn) selectToggle(btn, 'bjj-type');
+  });
+
+  document.getElementById('mat-focus-toggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('.toggle-btn');
+    if (btn) selectToggle(btn, 'bjj-focus-attempted');
   });
 
   // Technique rows are created dynamically, so their buttons are handled by
