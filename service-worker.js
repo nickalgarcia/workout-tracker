@@ -1,7 +1,7 @@
 // ── Mat Log Service Worker ──
 // Update this version number every time you deploy
 // This is what forces the home screen app to refresh
-const CACHE_VERSION = 'matlog-v20260902155412';
+const CACHE_VERSION = 'matlog-v20260902155811';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Files to cache for offline/fast loading
@@ -60,6 +60,10 @@ self.addEventListener('fetch', event => {
   if (event.request.url.includes('firebase.googleapis.com')) return;
   if (event.request.url.includes('cloudfunctions.net')) return;
   if (event.request.url.includes('googleapis.com')) return;
+  // Firebase Auth's helper pages live under /__/ on our own origin now that
+  // authDomain is the hosting domain. They must never be intercepted or
+  // cached — a stale auth handler breaks sign-in in ways that look random.
+  if (new URL(event.request.url).pathname.startsWith('/__/')) return;
 
   event.respondWith(
     fetch(event.request)

@@ -28,7 +28,11 @@ import {
 // ── Config ──
 const firebaseConfig = {
   apiKey: "AIzaSyCyyUoNqY1LVA_hfMCCEgZ0_vFI4ggTwyY",
-  authDomain: "workout-tracker-c1205.firebaseapp.com",
+  // Same origin as the app is served from, deliberately. With the default
+  // firebaseapp.com value the sign-in popup is cross-origin, and browsers
+  // that partition storage break the handshake with "missing initial
+  // state". Firebase Hosting serves /__/auth/* on this domain too.
+  authDomain: "workout-tracker-c1205.web.app",
   projectId: "workout-tracker-c1205",
   storageBucket: "workout-tracker-c1205.firebasestorage.app",
   messagingSenderId: "306664520085",
