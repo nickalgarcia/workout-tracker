@@ -24,7 +24,7 @@ registerView('history', () => renderHistory('all'));
 registerView('progress', renderProgressView);
 registerView('coach', initCoachView);
 registerView('log-lifting', initLiftingForm);
-registerView('log-bjj', initMatForm);
+registerView('log-mat', initMatForm);
 registerView('log-cardio', initCardioForm);
 registerView('focus', initFocusView);
 // 'detail' needs no initialiser — openDetail() fills it before navigating.

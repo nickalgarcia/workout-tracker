@@ -89,11 +89,11 @@ export function selectToggle(btn, hiddenId) {
 
 // ── Navigation ──
 const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'focus', 'progress', 'coach'];
-const LOG_VIEWS = ['log-lifting', 'log-bjj', 'log-cardio'];
+const LOG_VIEWS = ['log-lifting', 'log-mat', 'log-cardio'];
 
 const TITLES = {
   'dashboard': 'TRAIN LOG', 'log-lifting': 'LOG LIFTING',
-  'log-bjj': 'LOG BJJ', 'log-cardio': 'LOG CARDIO',
+  'log-mat': 'LOG MAT SESSION', 'log-cardio': 'LOG CARDIO',
   'history': 'HISTORY', 'detail': 'SESSION',
   'focus': 'FOCUS', 'progress': 'PROGRESS',
   'coach': 'COACH'

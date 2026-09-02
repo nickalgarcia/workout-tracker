@@ -1,7 +1,7 @@
 // ── Train Log Service Worker ──
 // Update this version number every time you deploy
 // This is what forces the home screen app to refresh
-const CACHE_VERSION = 'trainlog-v20260902144451';
+const CACHE_VERSION = 'trainlog-v20260902151734';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Files to cache for offline/fast loading

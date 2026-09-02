@@ -65,7 +65,7 @@
             <span class="card-label">Log Lifting</span>
             <span class="card-sub">Sets · Reps · Weight</span>
           </button>
-          <button class="action-card bjj" data-navigate="log-bjj">
+          <button class="action-card bjj" data-navigate="log-mat">
             <span class="card-icon">🥋</span>
             <span class="card-label">Log BJJ</span>
             <span class="card-sub">Duration · Techniques</span>
@@ -121,15 +121,32 @@
         <button class="save-btn" id="save-lifting-btn">Save Session</button>
       </section>
 
-      <!-- Log BJJ -->
-      <section id="view-log-bjj" class="view">
+      <!-- Log Mat Session -->
+      <section id="view-log-mat" class="view">
         <div class="form-section">
           <label class="field-label">Date</label>
-          <input type="date" id="bjj-date" class="field-input" />
+          <input type="date" id="mat-date" class="field-input" />
         </div>
         <div class="form-section">
-          <label class="field-label">Duration (minutes)</label>
-          <input type="number" id="bjj-duration" class="field-input" placeholder="e.g. 90" min="1" />
+          <label class="field-label">How did you feel walking in?</label>
+          <div class="readiness-row" id="mat-readiness-row">
+            <button class="readiness-btn" data-value="1">1</button>
+            <button class="readiness-btn" data-value="2">2</button>
+            <button class="readiness-btn" data-value="3">3</button>
+            <button class="readiness-btn" data-value="4">4</button>
+            <button class="readiness-btn" data-value="5">5</button>
+          </div>
+          <input type="hidden" id="mat-readiness" value="" />
+        </div>
+        <div class="form-row">
+          <div class="form-section">
+            <label class="field-label">Minutes</label>
+            <input type="number" id="mat-minutes" class="field-input" inputmode="numeric" min="1" />
+          </div>
+          <div class="form-section">
+            <label class="field-label">Rounds <span class="field-optional">optional</span></label>
+            <input type="number" id="mat-rounds" class="field-input" inputmode="numeric" min="0" placeholder="—" />
+          </div>
         </div>
         <div class="form-section">
           <label class="field-label">Session Type</label>
@@ -138,9 +155,13 @@
             <button class="toggle-btn" data-value="drilling">Drilling</button>
             <button class="toggle-btn" data-value="sparring">Sparring</button>
           </div>
-          <input type="hidden" id="bjj-type" value="both" />
+          <input type="hidden" id="mat-type" value="both" />
         </div>
-        <div class="form-section" id="mat-focus-section">
+        <div class="form-section">
+          <label class="field-label">Positions <span class="field-optional">tap any that came up</span></label>
+          <div class="chip-grid" id="mat-positions"></div>
+        </div>
+        <div class="form-section hidden" id="mat-focus-section">
           <label class="field-label">Did you get to your focus?</label>
           <div class="focus-prompt" id="mat-focus-title"></div>
           <div class="toggle-group" id="mat-focus-toggle">
@@ -148,18 +169,29 @@
             <button class="toggle-btn" data-value="partly">Partly</button>
             <button class="toggle-btn" data-value="no">No</button>
           </div>
-          <input type="hidden" id="bjj-focus-attempted" value="" />
+          <input type="hidden" id="mat-focus-attempted" value="" />
         </div>
         <div class="form-section">
-          <label class="field-label">Techniques Worked On</label>
+          <label class="field-label">What worked</label>
+          <textarea id="mat-worked" class="field-input field-textarea field-textarea-short" rows="2"
+                    placeholder="One thing that went right"></textarea>
+        </div>
+        <div class="form-section">
+          <label class="field-label">What beat me</label>
+          <textarea id="mat-beat" class="field-input field-textarea field-textarea-short" rows="2"
+                    placeholder="One thing you couldn't solve"></textarea>
+        </div>
+        <div class="form-section">
+          <label class="field-label">Techniques <span class="field-optional">optional</span></label>
           <div id="technique-list"></div>
           <button id="add-technique-btn" class="add-btn">+ Add Technique</button>
         </div>
         <div class="form-section">
-          <label class="field-label">Notes</label>
-          <textarea id="bjj-notes" class="field-input field-textarea" placeholder="What clicked today? What needs work?"></textarea>
+          <button id="mat-notes-toggle" class="notes-toggle">+ Add notes</button>
+          <textarea id="mat-notes" class="field-input field-textarea hidden"
+                    placeholder="Anything else worth remembering"></textarea>
         </div>
-        <button class="save-btn" id="save-bjj-btn">Save Session</button>
+        <button class="save-btn" id="save-mat-btn">Save Session</button>
       </section>
 
       <!-- Log Cardio -->
