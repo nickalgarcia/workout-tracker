@@ -1,10 +1,208 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const https = require("https");
 
+const MODEL = "claude-opus-5";
+const MAX_TOKENS = 8000;
+
+// ── Context building ───────────────────────────────────────────────────
+
+function profileBlock(profile) {
+  const p = profile || {};
+  const lines = [
+    p.name && `Name: ${p.name}`,
+    p.startedTraining && `Started training: ${p.startedTraining}`,
+    p.belt && `Belt: ${p.belt}`,
+    p.style && `Style: ${p.style}`,
+    p.bodyType && `Build: ${p.bodyType}`,
+    p.goals && `Goals: ${p.goals}`,
+    p.weeklyTargets &&
+      `Weekly targets: ${p.weeklyTargets.mat} mat sessions, ${p.weeklyTargets.support} support sessions`,
+  ].filter(Boolean);
+  return lines.join("\n") || "No profile.";
+}
+
+function focusBlock(focus) {
+  if (!focus || !focus.title) {
+    return "No focus is set right now. That is itself worth noticing — the first priority below cannot be assessed without one.";
+  }
+  const rate = focus.total > 0
+    ? `attempted in ${focus.attempted} of ${focus.total} logged sessions`
+    : "no sessions logged against it yet";
+  return [
+    `Title: ${focus.title}`,
+    focus.description && `Description: ${focus.description}`,
+    `Started: ${focus.startedAt} (week ${focus.weeks})`,
+    `Attempt rate: ${rate}`,
+  ].filter(Boolean).join("\n");
+}
+
+function sessionsBlock(sessions) {
+  if (!sessions || sessions.length === 0) return "No mat sessions logged.";
+  return sessions.map(s => {
+    const bits = [`${s.date} — ${s.minutes} min`];
+    if (s.rounds) bits.push(`${s.rounds} rounds`);
+    if (s.sessionType) bits.push(s.sessionType);
+    if (s.readiness) bits.push(`readiness ${s.readiness}/5`);
+    if (s.focusAttempted) bits.push(`focus: ${s.focusAttempted}`);
+
+    const detail = [];
+    if (s.positions && s.positions.length) detail.push(`  positions: ${s.positions.join(", ")}`);
+    if (s.worked) detail.push(`  worked: ${s.worked}`);
+    if (s.beat) detail.push(`  beat me: ${s.beat}`);
+    if (s.techniques && s.techniques.length) {
+      detail.push(`  techniques: ${s.techniques.map(t => (typeof t === "string" ? t : t.name)).join(", ")}`);
+    }
+    if (s.notes) detail.push(`  notes: ${s.notes}`);
+
+    return [bits.join(" · "), ...detail].join("\n");
+  }).join("\n\n");
+}
+
+function themesBlock(themes) {
+  if (!themes || themes.length === 0) {
+    return "Not enough repeated wording in the problem log to group themes yet.";
+  }
+  return themes.map(t => `${t.phrase} — ${t.count} times`).join("\n");
+}
+
+function supportBlock(support) {
+  const s = support || {};
+  return [
+    `Lifting sessions in the last 30 days: ${s.lifting ?? 0}`,
+    `Cardio sessions in the last 30 days: ${s.cardio ?? 0}`,
+    s.lastSupportDate
+      ? `Most recent support session: ${s.lastSupportDate}`
+      : "No support session on record.",
+  ].join("\n");
+}
+
+function coverageBlock(vocabulary, sessions) {
+  if (!vocabulary || vocabulary.length === 0) return "";
+  const counts = new Map(vocabulary.map(p => [p, 0]));
+  (sessions || []).forEach(s => (s.positions || []).forEach(p => {
+    if (counts.has(p)) counts.set(p, counts.get(p) + 1);
+  }));
+  return [...counts.entries()]
+    .map(([p, n]) => `${p}: ${n}`)
+    .join("\n");
+}
+
+function buildSystemPrompt(body) {
+  const { profile, focus, matSessions, support30, themes, positionVocabulary } = body;
+
+  return `You are a no-gi jiu-jitsu coach. Your athlete is a recreational hobbyist who started training in January 2025. He is smaller and lighter than most of his training partners. He trains for fun, fitness and community — not competition — and has not asked to compete.
+
+## Athlete
+
+${profileBlock(profile)}
+
+## Current focus
+
+${focusBlock(focus)}
+
+## Last ${(matSessions || []).length} mat sessions, most recent first
+
+${sessionsBlock(matSessions)}
+
+## Recurring themes in the problem log
+
+Counted by literal repeated wording across every "what beat me" entry. The counts are for exact phrases, so they undercount — two entries describing the same problem in different words do not group.
+
+${themesBlock(themes)}
+
+## Position coverage across the sessions above
+
+${coverageBlock(positionVocabulary, matSessions)}
+
+## Support work
+
+${supportBlock(support30)}
+
+---
+
+# How to coach him
+
+Work through these in order. Earlier priorities matter more; do not lead with a later one because it is easier to say something about.
+
+1. **Is he getting to his stated focus?** This is the single most important question. Look at the attempt rate and at which sessions he did and did not reach it. If the rate is low, the useful question is what is getting in the way, not whether he should try harder.
+2. **What does the problem log say he should drill next?** The "what beat me" entries are his curriculum. Name the specific problem and the specific thing to drill for it.
+3. **Position gaps.** Which positions in the vocabulary is he never tagging? A position at zero over this many sessions is a gap worth naming — but check whether it is a real gap or just how his gym runs class before making it a priority.
+4. **Recovery signals.** Read readiness alongside session density. Several low-readiness sessions close together, or readiness trending down, means something. Say so plainly.
+5. **Support work consistency.** Mention this last, and frame it only as what supports his mat game — grip, posterior chain, and holding structure against bigger partners. Never as a goal of its own.
+
+# Rules
+
+- **Reference his actual sessions and dates.** Say "on 2026-03-14 you wrote that you couldn't break posture" — not "you seem to struggle with posture." Every observation must be traceable to something in the data above. If the data does not support a point, do not make it.
+- **Never give advice that would apply to any jiu-jitsu student.** Generic advice is worse than no advice here; he has a log precisely so he does not have to read generalities.
+- **Do not push competition, and do not push intensity he has not asked for.** He trains for fun and community. Suggestions should fit a recreational schedule.
+- **Do not tell him to be more consistent** unless the data shows a real drop, and if it does, say what the data shows rather than exhorting him.
+- Being smaller than his partners is context for technique selection — structure, frames, angles, not strength battles. It is not a limitation to sympathise with.
+- **End with two or three concrete things to try in his next session.** Concrete means a named position, entry or drill he could walk in and do. Not a lecture, not a training philosophy.
+
+Keep the whole response short enough to read on a phone between rounds.`;
+}
+
+// ── Anthropic call ─────────────────────────────────────────────────────
+
+function callAnthropic(systemPrompt, messages, apiKey) {
+  const requestBody = JSON.stringify({
+    model: MODEL,
+    max_tokens: MAX_TOKENS,
+    system: systemPrompt,
+    messages,
+    // Adaptive thinking: the priority ordering above is a reasoning task, not
+    // a lookup. Reasoning is not shown to the user, so it stays omitted.
+    thinking: { type: "adaptive" },
+    output_config: { effort: "medium" },
+    // Route around a policy decline rather than returning nothing.
+    fallbacks: "default",
+  });
+
+  const options = {
+    hostname: "api.anthropic.com",
+    path: "/v1/messages",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "server-side-fallback-2026-07-01",
+      "Content-Length": Buffer.byteLength(requestBody),
+    },
+  };
+
+  return new Promise((resolve, reject) => {
+    const apiReq = https.request(options, (apiRes) => {
+      let data = "";
+      apiRes.on("data", chunk => (data += chunk));
+      apiRes.on("end", () => {
+        try {
+          resolve({ status: apiRes.statusCode, body: JSON.parse(data) });
+        } catch (e) {
+          reject(new Error(`Could not parse Anthropic response (HTTP ${apiRes.statusCode})`));
+        }
+      });
+    });
+    apiReq.on("error", reject);
+    apiReq.write(requestBody);
+    apiReq.end();
+  });
+}
+
+/** First text block, skipping thinking blocks. */
+function firstText(content) {
+  if (!Array.isArray(content)) return null;
+  const block = content.find(b => b.type === "text");
+  return block ? block.text : null;
+}
+
+// ── Handler ────────────────────────────────────────────────────────────
+
 exports.getCoachingAdvice = onRequest(
   {
     cors: true,
-    secrets: ["ANTHROPIC_API_KEY"]
+    secrets: ["ANTHROPIC_API_KEY"],
+    timeoutSeconds: 120,
   },
   async (req, res) => {
     if (req.method !== "POST") {
@@ -12,140 +210,51 @@ exports.getCoachingAdvice = onRequest(
       return;
     }
 
-    const { sessions, profile = {}, messages = [] } = req.body;
+    const body = req.body || {};
+    const { matSessions = [], messages = [] } = body;
 
-    if (!sessions || sessions.length === 0) {
-      res.status(400).json({ error: "No session data provided" });
+    if (matSessions.length === 0 && messages.length === 0) {
+      res.status(400).json({ error: "No mat sessions provided" });
       return;
     }
 
-    // Build profile context
-    const profileLines = [];
-    if (profile.name) profileLines.push(`Name: ${profile.name}`);
-    if (profile.gender && profile.gender !== "prefer_not") profileLines.push(`Gender: ${profile.gender}`);
-    if (profile.age) profileLines.push(`Age: ${profile.age}`);
-    if (profile.weight) profileLines.push(`Weight: ${profile.weight} lbs`);
-    if (profile.height) profileLines.push(`Height: ${profile.height}`);
-    if (profile.goal) profileLines.push(`Primary goal: ${profile.goal.replace("_", " ")}`);
-    if (profile.equipment && profile.equipment.length) profileLines.push(`Equipment: ${profile.equipment.join(", ")}`);
-    if (profile.dumbbellMax) profileLines.push(`Heaviest dumbbells available: ${profile.dumbbellMax} lbs. IMPORTANT: Never suggest increasing weight beyond ${profile.dumbbellMax} lbs. Instead suggest tempo, pauses, extra sets, or bodyweight progressions.`);
-    if (profile.activities && profile.activities.length) {
-      const activityLines = profile.activities.map(a => {
-        const days = profile.trainingDays && profile.trainingDays[a];
-        return days ? `${a} (${days}x/week)` : a;
-      });
-      profileLines.push(`Trains: ${activityLines.join(", ")}`);
-    }
-    const profileContext = profileLines.length > 0
-      ? profileLines.join("\n")
-      : "No profile set up yet — give general advice.";
+    // The function is stateless, so the client resends the full context on
+    // every chat turn and the system prompt is rebuilt each time.
+    const systemPrompt = buildSystemPrompt(body);
 
-    // Build session summary
-    const sessionSummary = sessions.map(s => {
-      if (s.type === "lifting") {
-        const exercises = (s.exercises || []).map(ex => {
-          const sets = (ex.sets || []).map(set =>
-            `${set.reps} reps @ ${set.weight} lbs`
-          ).join(", ");
-          return `  - ${ex.name}: ${sets}`;
-        }).join("\n");
-        return `Lifting session on ${s.date} (${s.planLabel || "Free"}):\n${exercises}`;
-      } else if (s.type === "bjj") {
-        const techniques = (s.techniques || []).map(t =>
-          typeof t === "string" ? t : t.name
-        ).join(", ");
-        return `BJJ session on ${s.date}: ${s.duration} mins, ${s.sessionType}. Techniques: ${techniques || "none logged"}`;
-      } else if (s.type === "yoga") {
-        return `Yoga session on ${s.date}: ${s.duration} mins, ${s.style} style.${s.notes ? " Notes: " + s.notes : ""}`;
-      } else if (s.type === "cardio") {
-        const dist = s.distance ? `, ${s.distance} ${s.distanceUnit}` : "";
-        return `Cardio session on ${s.date}: ${s.duration} mins, ${s.cardioType}${dist}.${s.notes ? " Notes: " + s.notes : ""}`;
-      } else if (s.type === "pilates") {
-        const focus = s.focus ? s.focus.replace("_", " ") : "";
-        return `Pilates session on ${s.date}: ${s.duration} mins, ${s.style} style, focus: ${focus}.${s.notes ? " Notes: " + s.notes : ""}`;
+    const apiMessages = messages.length > 0 ? messages : [{
+      role: "user",
+      content:
+        "Review my training and coach me. Work through the priorities in order, " +
+        "reference my actual sessions and dates, and finish with two or three " +
+        "concrete things to try next session.",
+    }];
+
+    try {
+      const { status, body: result } = await callAnthropic(
+        systemPrompt, apiMessages, process.env.ANTHROPIC_API_KEY
+      );
+
+      if (status !== 200) {
+        console.error("Anthropic error", status, result);
+        res.status(502).json({ error: result?.error?.message || "Upstream error" });
+        return;
       }
-      return "";
-    }).filter(Boolean).join("\n\n");
 
-    // System prompt with full context
-    const systemPrompt = `You are a personal fitness coach with expertise across strength training, martial arts, yoga, Pilates, and cardio. Here is your athlete's profile:
-
-${profileContext}
-
-For lifting, they follow "The Daredevil Plan" — a 2-day dumbbell home workout split:
-- Day 1 (Push/Legs): Goblet Squat, Dumbbell Floor Press, Dumbbell Shoulder Press, Push Up, Dumbbell Lunge, Overhead Tricep Extension, Dead Bug
-- Day 2 (Pull/Hinge): Romanian Deadlift, Dumbbell Row, Pull Up, Bicep Curl, Lateral Raise, Dumbbell Rear Delt Fly, Russian Twist
-
-Here are their recent training sessions:
-
-${sessionSummary}
-
-You are having a coaching conversation with this athlete. Follow these guidelines:
-- Give EQUAL attention to ALL activity types they do — lifting, BJJ, yoga, Pilates, cardio. Do not over-focus on lifting.
-- For lifting: suggest progressive overload within their equipment limits.
-- For BJJ: notice technique patterns, drilling vs sparring balance, skill development.
-- For yoga/Pilates: note consistency, style variety, and how it supports their other training.
-- For cardio: observe frequency, duration, and intensity patterns.
-- Always consider how all activities interact — recovery, fatigue, and balance across the full week.
-- Be direct, practical, and specific to what you actually see in their data.
-- Keep responses concise — 2-4 sentences per point.
-- When giving the initial analysis, format as a numbered list covering their full training picture.
-- For follow-up questions, respond conversationally.`;
-
-    // Build messages array — initial analysis or follow-up chat
-    let apiMessages;
-    if (messages.length === 0) {
-      // Initial analysis request
-      apiMessages = [{
-        role: "user",
-        content: "Based on my profile and recent sessions, give me 3-4 short, specific, actionable coaching insights covering my full training picture — not just lifting. Look at all my activities and how they work together. Format as a numbered list."
-      }];
-    } else {
-      // Ongoing chat — pass full history
-      apiMessages = messages;
-    }
-
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    const requestBody = JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
-      system: systemPrompt,
-      messages: apiMessages
-    });
-
-    const options = {
-      hostname: "api.anthropic.com",
-      path: "/v1/messages",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Length": Buffer.byteLength(requestBody)
-      }
-    };
-
-    const anthropicResponse = await new Promise((resolve, reject) => {
-      const apiReq = https.request(options, (apiRes) => {
-        let data = "";
-        apiRes.on("data", chunk => data += chunk);
-        apiRes.on("end", () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            reject(new Error("Failed to parse Anthropic response"));
-          }
+      // Always check stop_reason before reading content.
+      if (result.stop_reason === "refusal") {
+        console.warn("Refused", result.stop_details);
+        res.status(200).json({
+          advice: "The coach declined to answer that one. Try rephrasing the question.",
         });
-      });
-      apiReq.on("error", reject);
-      apiReq.write(requestBody);
-      apiReq.end();
-    });
+        return;
+      }
 
-    const text = anthropicResponse.content && anthropicResponse.content[0]
-      ? anthropicResponse.content[0].text
-      : "No advice available.";
-    res.json({ advice: text });
+      const text = firstText(result.content);
+      res.json({ advice: text || "No advice available." });
+    } catch (e) {
+      console.error(e);
+      res.status(502).json({ error: "Could not reach the coach." });
+    }
   }
 );

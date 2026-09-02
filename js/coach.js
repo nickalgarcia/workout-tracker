@@ -1,13 +1,71 @@
 // ── coach.js ──
 // The coach view: analysis request, follow-up chat, response formatting.
 
-import { PROFILE, getSessions } from './db.js';
+import { PROFILE, POSITIONS, getSessions } from './db.js';
 import { sessionKind, escapeHtml } from './ui.js';
+import { loadActiveFocus, attemptStats, weeksActive } from './focus.js';
+import { groupThemes } from './progress.js';
 
 const ENDPOINT = 'https://us-central1-workout-tracker-c1205.cloudfunctions.net/getCoachingAdvice';
 
-let coachSessions = [];
+// The whole context, rebuilt when the analysis runs and resent on every
+// chat turn — the function is stateless and holds nothing between calls.
+let coachContext = null;
 let chatHistory = [];
+
+function daysSince(dateStr, today = new Date()) {
+  if (!dateStr) return Infinity;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return Math.floor((today - new Date(y, m - 1, d)) / 86400000);
+}
+
+/** Everything the coach needs, assembled from what the app already knows. */
+async function buildContext() {
+  const sessions = await getSessions();
+  const focus = await loadActiveFocus();
+
+  const mat = sessions.filter(s => sessionKind(s) === 'mat');
+  const support = sessions.filter(s => sessionKind(s) !== 'mat');
+  const support30 = support.filter(s => daysSince(s.date) <= 30);
+
+  const beats = mat
+    .filter(s => s.beat && s.beat.trim())
+    .map(s => ({ beat: s.beat.trim() }));
+
+  const stats = attemptStats(focus, sessions);
+
+  return {
+    profile: PROFILE,
+    focus: focus && {
+      title: focus.title,
+      description: focus.description,
+      startedAt: focus.startedAt,
+      weeks: weeksActive(focus),
+      attempted: stats.attempted,
+      total: stats.total,
+    },
+    matSessions: mat.slice(0, 20).map(s => ({
+      date: s.date,
+      minutes: s.minutes,
+      rounds: s.rounds,
+      sessionType: s.sessionType,
+      positions: s.positions || [],
+      techniques: s.techniques || [],
+      worked: s.worked,
+      beat: s.beat,
+      readiness: s.readiness,
+      focusAttempted: s.focusAttempted,
+      notes: s.notes,
+    })),
+    support30: {
+      lifting: support30.filter(s => sessionKind(s) === 'lifting').length,
+      cardio: support30.filter(s => sessionKind(s) === 'cardio').length,
+      lastSupportDate: support[0]?.date ?? null,
+    },
+    themes: groupThemes(beats),
+    positionVocabulary: POSITIONS,
+  };
+}
 
 /**
  * Turn the model's markdown-ish reply into the app's insight blocks.
@@ -39,7 +97,8 @@ async function askCoach(messages) {
   const response = await fetch(ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessions: coachSessions, profile: PROFILE, messages })
+    // Full context on every turn, including chat follow-ups.
+    body: JSON.stringify({ ...coachContext, messages })
   });
   if (!response.ok) throw new Error('Function call failed');
   const data = await response.json();
@@ -55,23 +114,24 @@ async function getCoachingAdvice() {
   output.innerHTML = '<div class="coach-loading"><div class="coach-spinner"></div><p>Claude is reviewing your sessions...</p></div>';
 
   try {
-    coachSessions = (await getSessions()).slice(0, 20);
+    coachContext = await buildContext();
 
-    if (coachSessions.length === 0) {
-      output.innerHTML = '<div class="coach-empty">Log some sessions first and your coach will have data to work with.</div>';
+    if (coachContext.matSessions.length === 0) {
+      output.innerHTML = '<div class="coach-empty">Log a mat session or two first and your coach will have something to work with.</div>';
       return;
     }
 
     const advice = await askCoach([]) || 'No advice returned.';
     chatHistory = [{ role: 'assistant', content: advice }];
 
-    const matCount = coachSessions.filter(s => sessionKind(s) === 'mat').length;
-    const supportCount = coachSessions.length - matCount;
+    const matCount = coachContext.matSessions.length;
+    const { lifting, cardio } = coachContext.support30;
 
     output.innerHTML = `
       <div class="coach-meta">
-        Based on your last ${coachSessions.length} sessions —
-        ${matCount} mat, ${supportCount} support
+        Based on your last ${matCount} mat session${matCount === 1 ? '' : 's'},
+        ${lifting + cardio} support session${lifting + cardio === 1 ? '' : 's'} in 30 days${
+          coachContext.focus ? `, and your focus "${escapeHtml(coachContext.focus.title)}"` : ''}
       </div>
       <div class="coach-advice">${formatCoachResponse(advice)}</div>
       <button class="coach-refresh-btn" data-action="coach-refresh">↺ Refresh Analysis</button>
@@ -123,6 +183,7 @@ async function sendChatMessage() {
 }
 
 export function initCoachView() {
+  coachContext = null;
   document.getElementById('coach-output').innerHTML = '';
   const btn = document.getElementById('get-advice-btn');
   btn.disabled = false;
