@@ -340,6 +340,62 @@ async function removeSession(id) {
 }
 
 // ── Dashboard ──
+
+/** Monday 00:00 of the week containing `today`. */
+function startOfWeek(today = new Date()) {
+  const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const dayFromMonday = (d.getDay() + 6) % 7;   // Sunday is 0, we want 6
+  d.setDate(d.getDate() - dayFromMonday);
+  return d;
+}
+
+function onOrAfter(dateStr, boundary) {
+  if (!dateStr) return false;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d) >= boundary;
+}
+
+function daysSince(dateStr, today = new Date()) {
+  if (!dateStr) return Infinity;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return Math.floor((today - new Date(y, m - 1, d)) / 86400000);
+}
+
+function weekBalance(sessions) {
+  const monday = startOfWeek();
+  const thisWeek = sessions.filter(s => onOrAfter(s.date, monday));
+  const mat = thisWeek.filter(s => sessionKind(s) === 'mat').length;
+  const support = thisWeek.length - mat;
+  const { mat: matTarget, support: supportTarget } = PROFILE.weeklyTargets;
+  return `Mat ${mat} of ${matTarget} <span class="week-dot">·</span> Support ${support} of ${supportTarget}`;
+}
+
+// The nudge is dismissible for the day only, so it comes back tomorrow if
+// the situation has not changed.
+const NUDGE_KEY = 'matlog:nudgeDismissed';
+
+function nudgeDismissedToday() {
+  try { return localStorage.getItem(NUDGE_KEY) === todayStr(); } catch { return false; }
+}
+
+export function dismissNudge() {
+  try { localStorage.setItem(NUDGE_KEY, todayStr()); } catch { /* private mode */ }
+  document.getElementById('support-nudge').innerHTML = '';
+}
+
+function supportNudge(sessions) {
+  if (nudgeDismissedToday()) return '';
+  const recentSupport = sessions.filter(s =>
+    sessionKind(s) !== 'mat' && daysSince(s.date) <= 14);
+  if (recentSupport.length > 0) return '';
+
+  return `
+    <div class="nudge">
+      <div class="nudge-text">No lifting in 14 days. Grip and posterior chain are what let you hold structure against bigger training partners.</div>
+      <button class="nudge-dismiss" data-action="dismiss-nudge" aria-label="Dismiss for today">✕</button>
+    </div>`;
+}
+
 export async function renderDashboard() {
   const h = new Date().getHours();
   const firstName = PROFILE.name;
@@ -356,35 +412,17 @@ export async function renderDashboard() {
       await dashboardCardRenderer(document.getElementById('focus-card'), allSessions);
     }
 
-    // Streak — unique training days in the last 7
-    const today = new Date();
-    const last7 = new Set();
-    allSessions.forEach(s => {
-      if (!s.date) return;
-      const [y, m, d] = s.date.split('-');
-      const sessionDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-      const diffDays = Math.floor((today - sessionDate) / (1000 * 60 * 60 * 24));
-      if (diffDays >= 0 && diffDays < 7) last7.add(s.date);
-    });
-    const streakDays = last7.size;
-    const streakEl = document.getElementById('streak-count');
-    if (streakEl) {
-      streakEl.textContent = streakDays > 0
-        ? `${streakDays} session${streakDays > 1 ? 's' : ''} this week 🔥`
-        : 'No sessions yet this week';
-    }
+    document.getElementById('week-balance').innerHTML = weekBalance(allSessions);
+    document.getElementById('support-nudge').innerHTML = supportNudge(allSessions);
 
     const recent = allSessions.slice(0, 5);
-    if (recent.length === 0) {
-      container.innerHTML = `
-        <div class="welcome-state">
-          <div class="welcome-icon">👋</div>
-          <div class="welcome-title">Welcome to Train Log, ${escapeHtml(firstName)}!</div>
-          <div class="welcome-text">You're all set up. Tap any activity above to log your first session. Your AI Coach will have personalized advice after a few sessions.</div>
-        </div>`;
-    } else {
-      container.innerHTML = recent.map(buildSessionCard).join('');
-    }
+    container.innerHTML = recent.length === 0
+      ? `<div class="welcome-state">
+           <div class="welcome-icon">👋</div>
+           <div class="welcome-title">Welcome, ${escapeHtml(firstName)}.</div>
+           <div class="welcome-text">Log your first mat session and the focus card, problem log and position coverage all start filling in.</div>
+         </div>`
+      : recent.map(buildSessionCard).join('');
   } catch (e) {
     console.error(e);
     container.innerHTML = `<div class="empty-state">Error loading sessions.</div>`;

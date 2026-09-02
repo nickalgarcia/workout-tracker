@@ -170,10 +170,9 @@ destroyed.
 These are places where the schema is ahead of the UI. They are intentional,
 not oversights.
 
-- **`minutes` on lifting sessions is `null`.** The lifting form has no
-  duration input — v1 never collected one. New lifting sessions therefore
-  write `null` until a field is added. Cardio and mat sessions both have a
-  real minutes input.
+- **`minutes` on migrated lifting sessions is `null`.** v1 never collected a
+  duration, so historical lifting sessions have none. The form now has an
+  optional minutes field, so new ones can carry it.
 - **`positions`, `rounds`, `worked`, `beat` and `readiness` are written
   empty/null** by the current mat form, which is still the old BJJ form. The
   rebuilt mat form collects them.

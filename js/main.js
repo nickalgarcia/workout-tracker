@@ -8,10 +8,10 @@
 import { signIn, signOut, watchAuth } from './db.js';
 import {
   navigate, goBack, showToast, registerView, registerDashboardCard,
-  isFormDirty, openDetail, renderDashboard, renderHistory
+  isFormDirty, openDetail, renderDashboard, renderHistory, dismissNudge
 } from './ui.js';
 import { initMatForm, wireMat } from './mat.js';
-import { initLiftingForm, initCardioForm, wireSupport } from './support.js';
+import { initLiftingForm, initCardioForm, wireSupport, startMinimumSession } from './support.js';
 import { initCoachView, wireCoach } from './coach.js';
 import { initFocusView, wireFocus, renderFocusCard } from './focus.js';
 import { initProgressView, wireProgress } from './progress.js';
@@ -78,6 +78,13 @@ document.addEventListener('click', (e) => {
 
 document.getElementById('history-filter-select')
   .addEventListener('change', (e) => renderHistory(e.target.value));
+
+document.getElementById('minimum-session-btn')
+  .addEventListener('click', startMinimumSession);
+
+document.getElementById('support-nudge').addEventListener('click', (e) => {
+  if (e.target.closest('[data-action="dismiss-nudge"]')) dismissNudge();
+});
 
 wireMat();
 wireSupport();

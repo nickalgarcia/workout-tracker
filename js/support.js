@@ -39,7 +39,21 @@ const PRESET_EXERCISES = [
 
 const CUSTOM = '-- Custom --';
 
+// The minimum session: 15 minutes, three movements, three sets each, ready
+// to save. The point is removing the decision, not the effort.
+const MINIMUM_SESSION = {
+  minutes: 15,
+  exercises: ['Goblet Squat', 'Dumbbell Row', 'Romanian Deadlift'],
+};
+
 let exerciseRowCount = 0;
+let pendingMinimum = false;
+
+/** Queue the minimum session and open the lifting form prefilled. */
+export function startMinimumSession() {
+  pendingMinimum = true;
+  navigate('log-lifting');
+}
 
 function selectPlan(btn) {
   document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
@@ -172,6 +186,7 @@ async function saveLifting() {
   const exercises = collectExercises();
   if (exercises.length === 0) { showToast('Add at least one exercise'); return; }
   const notes = document.getElementById('lifting-notes').value.trim();
+  const minutesInput = document.getElementById('lifting-minutes').value.trim();
 
   const btn = document.getElementById('save-lifting-btn');
   btn.textContent = 'Saving...';
@@ -184,7 +199,7 @@ async function saveLifting() {
       type: 'support',
       subtype: 'lifting',
       date,
-      minutes: null,          // the lifting form has no duration input yet
+      minutes: minutesInput ? parseInt(minutesInput) : null,
       exercises,
       cardioType: null,
       distance: null,
@@ -208,12 +223,22 @@ export function initLiftingForm() {
   document.getElementById('exercise-list').innerHTML = '';
   exerciseRowCount = 0;
 
-  document.querySelectorAll('.plan-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.plan === 'day1');
-  });
-  document.getElementById('selected-plan').value = 'day1';
-  loadPlanExercises('day1');
-  watchFormDirty(['lifting-date', 'lifting-notes']);
+  if (pendingMinimum) {
+    pendingMinimum = false;
+    document.getElementById('lifting-minutes').value = MINIMUM_SESSION.minutes;
+    document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('selected-plan').value = 'blank';
+    MINIMUM_SESSION.exercises.forEach(name => buildExerciseRow(name, 3));
+  } else {
+    document.getElementById('lifting-minutes').value = '';
+    document.querySelectorAll('.plan-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.plan === 'day1');
+    });
+    document.getElementById('selected-plan').value = 'day1';
+    loadPlanExercises('day1');
+  }
+
+  watchFormDirty(['lifting-date', 'lifting-minutes', 'lifting-notes']);
 }
 
 // ── Cardio ──

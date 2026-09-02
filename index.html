@@ -55,27 +55,22 @@
       <section id="view-dashboard" class="view active">
         <div class="dashboard-hero">
           <p class="greeting" id="greeting"></p>
-          <p class="subgreeting">Ready to put in work?</p>
-          <p class="streak-count" id="streak-count"></p>
         </div>
+
         <div id="focus-card"></div>
-        <div class="action-cards">
-          <button class="action-card lifting" data-navigate="log-lifting">
-            <span class="card-icon">🏋️</span>
-            <span class="card-label">Log Lifting</span>
-            <span class="card-sub">Sets · Reps · Weight</span>
-          </button>
-          <button class="action-card bjj" data-navigate="log-mat">
-            <span class="card-icon">🥋</span>
-            <span class="card-label">Log BJJ</span>
-            <span class="card-sub">Duration · Techniques</span>
-          </button>
-          <button class="action-card cardio" data-navigate="log-cardio">
-            <span class="card-icon">🏃</span>
-            <span class="card-label">Log Cardio</span>
-            <span class="card-sub">Duration · Distance</span>
-          </button>
+
+        <div class="week-balance" id="week-balance"></div>
+
+        <button class="primary-log-btn" data-navigate="log-mat">Log Mat Session</button>
+
+        <div class="secondary-log-row">
+          <button class="secondary-log-btn" data-navigate="log-lifting">Lifting</button>
+          <button class="secondary-log-btn" id="minimum-session-btn" title="15 minutes, three movements, ready to save">Minimum</button>
+          <button class="secondary-log-btn" data-navigate="log-cardio">Cardio</button>
         </div>
+
+        <div id="support-nudge"></div>
+
         <div class="section-header">
           <h2>Recent Sessions</h2>
           <button class="text-btn" data-navigate="history">See all</button>
@@ -108,6 +103,10 @@
         <div class="form-section">
           <label class="field-label">Date</label>
           <input type="date" id="lifting-date" class="field-input" />
+        </div>
+        <div class="form-section">
+          <label class="field-label">Minutes <span class="field-optional">optional</span></label>
+          <input type="number" id="lifting-minutes" class="field-input" inputmode="numeric" min="1" placeholder="e.g. 30" />
         </div>
         <div class="form-section">
           <label class="field-label">Exercises</label>
