@@ -24,3 +24,7 @@ scripts/node_modules/
 
 # Snapshot of deployed rules, for diffing only — not source of truth
 firestore.rules.live
+
+# Emulator
+firestore-debug.log
+firebase-debug.*.log

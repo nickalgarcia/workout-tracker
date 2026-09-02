@@ -17,7 +17,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const admin = require('firebase-admin');
+// Modular subpath imports — firebase-admin v14 dropped the namespaced API.
+const { initializeApp, applicationDefault } = require('firebase-admin/app');
+const { getSecurityRules } = require('firebase-admin/security-rules');
 
 const PROJECT_ID = 'workout-tracker-c1205';
 const OUT = path.join(__dirname, '..', 'firestore.rules.live');
@@ -32,12 +34,12 @@ async function main() {
     process.exit(1);
   }
 
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+  initializeApp({
+    credential: applicationDefault(),
     projectId: PROJECT_ID,
   });
 
-  const ruleset = await admin.securityRules().getFirestoreRuleset();
+  const ruleset = await getSecurityRules().getFirestoreRuleset();
 
   console.log(`ruleset:  ${ruleset.name}`);
   console.log(`created:  ${ruleset.createTime}`);

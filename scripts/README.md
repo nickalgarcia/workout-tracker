@@ -44,6 +44,61 @@ You need a service-account key. Do this once:
 That key grants **full admin access** to the project. It bypasses all
 Firestore security rules. Treat it like a password.
 
+## migrate-v2.js
+
+Converts `users/{uid}/sessions` to `schemaVersion: 2` as defined in
+[../docs/SCHEMA.md](../docs/SCHEMA.md).
+
+**It defaults to a dry run.** Nothing is written unless you pass `--commit`.
+
+```sh
+cd scripts
+export GOOGLE_APPLICATION_CREDENTIALS=~/.config/mat-log/serviceAccountKey.json
+
+# 1. Dry run — prints a before/after for every document, writes nothing.
+node migrate-v2.js
+
+# 2. Read the output. When it looks right:
+node migrate-v2.js --commit
+```
+
+`--uid=<uid>` restricts it to one user; without it, every user under
+`/users` is processed (there is one).
+
+### What it does
+
+| v1 | v2 |
+|---|---|
+| `type: 'bjj'` | `type: 'mat'`, `duration` -> `minutes`, techniques normalised to `{name, link?}` |
+| `type: 'lifting'` | `type: 'support'` / `subtype: 'lifting'`, `minutes: null`, `plan` and `planLabel` deleted |
+| `type: 'cardio'` | `type: 'support'` / `subtype: 'cardio'`, `duration` -> `minutes` |
+| `type: 'yoga'` or `'pilates'` | `archived: true`, otherwise untouched — not deleted |
+
+Fields that v1 never recorded (`rounds`, `positions`, `focusId`,
+`focusAttempted`, `worked`, `beat`, `readiness`) are set to null or empty.
+No data is invented.
+
+Every migrated document also gets `schemaVersion: 2` and `migratedAt`.
+That includes the archived yoga/pilates ones — they keep their own fields,
+but carrying the stamp is what lets a re-run skip them.
+
+### Safety
+
+- **Idempotent.** Anything already at `schemaVersion: 2` is skipped, so
+  re-running is a no-op. Verified by running it twice.
+- **Batched**, 400 writes per batch (Firestore caps at 500).
+- **Unrecognised types are left alone**, listed by id at the end. It will
+  not guess at a document it does not understand.
+- It finishes by counting documents still below `schemaVersion: 2`. The app
+  reads v2 only, so **do not deploy until that number is 0.** If it is not,
+  the remaining documents are listed above it.
+
+### After it runs
+
+Check the Firebase console, then load the app. Sessions that did not
+migrate render as `NOT MIGRATED` cards and log a console warning naming the
+document — they will not fail silently.
+
 ## fetch-live-rules.js
 
 Downloads the Firestore rules currently deployed to the project so you can

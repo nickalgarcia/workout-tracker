@@ -17,7 +17,6 @@ import {
   doc,
   query,
   orderBy,
-  where,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
@@ -130,16 +129,18 @@ async function saveSessionToDB(session) {
   return docRef.id;
 }
 
-// Get all sessions, newest first
-async function getSessionsFromDB(type = 'all') {
-  let q;
-  if (type === 'all') {
-    q = query(sessionsRef(), orderBy('createdAt', 'desc'));
-  } else {
-    q = query(sessionsRef(), where('type', '==', type), orderBy('createdAt', 'desc'));
-  }
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+// Get all sessions, newest first.
+//
+// Archived documents (the old yoga and pilates sessions) are excluded here,
+// which is the single place sessions enter the app — so every view gets the
+// filter for free. It is done client-side on purpose: a Firestore
+// `where('archived', '!=', true)` would also drop every document that has
+// no `archived` field at all, which is all of them.
+async function getSessionsFromDB() {
+  const snapshot = await getDocs(query(sessionsRef(), orderBy('createdAt', 'desc')));
+  return snapshot.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(s => !s.archived);
 }
 
 // Delete a session
@@ -547,7 +548,7 @@ async function renderDashboard() {
   const greeting = h < 12 ? `Good morning, ${firstName}.` : h < 17 ? `Good afternoon, ${firstName}.` : `Good evening, ${firstName}.`;
   document.getElementById('greeting').textContent = greeting;
 
-  const allSessions = await getSessionsFromDB('all');
+  const allSessions = await getSessionsFromDB();
 
   // Build streak — count unique training days in last 7 days
   const today = new Date();
@@ -592,7 +593,7 @@ async function renderHistory(filter) {
   const container = document.getElementById('history-list');
   container.innerHTML = '<div class="loading-state">Loading...</div>';
   try {
-    const allSessions = await getSessionsFromDB('all');
+    const allSessions = await getSessionsFromDB();
 
     // Build dropdown with counts — only show kinds that have sessions.
     // Keyed on kind so v1 'bjj' and v2 'mat' docs land in the same bucket.
@@ -629,23 +630,25 @@ window.filterHistory = async (select) => {
   await renderHistory(select.value);
 };
 
-// ── v1 / v2 bridge ──
-// v2 stores type 'mat' | 'support' (+ subtype) with `minutes`.
-// v1 stored type 'bjj' | 'lifting' | 'cardio' with `duration`.
-// These collapse both into one shape so rendering does not care which it
-// is holding. The v1 fallbacks come out once the migration has run.
+// ── Session kind ──
+// Reads expect schemaVersion 2: type 'mat' | 'support' (+ subtype).
+// A document that reaches here in any other shape was not migrated; it is
+// surfaced rather than silently rendered blank. Run scripts/migrate-v2.js.
 function sessionKind(session) {
-  const t = session.type;
-  if (t === 'mat' || t === 'bjj') return 'mat';
-  if (t === 'support') return session.subtype === 'cardio' ? 'cardio' : 'lifting';
-  return t;                                     // v1 'lifting' | 'cardio'
+  if (session.type === 'mat') return 'mat';
+  if (session.type === 'support') return session.subtype === 'cardio' ? 'cardio' : 'lifting';
+  console.warn(
+    `Session ${session.id} has type "${session.type}" and schemaVersion ` +
+    `${session.schemaVersion}. Expected schemaVersion 2 — run scripts/migrate-v2.js.`
+  );
+  return 'unknown';
 }
 
 function sessionMinutes(session) {
-  return session.minutes ?? session.duration ?? null;
+  return session.minutes ?? null;
 }
 
-const KIND_LABELS = { mat: 'MAT', lifting: 'LIFTING', cardio: 'CARDIO' };
+const KIND_LABELS = { mat: 'MAT', lifting: 'LIFTING', cardio: 'CARDIO', unknown: 'NOT MIGRATED' };
 const KIND_COLORS = { mat: 'bjj', lifting: 'lifting', cardio: 'cardio-type' };
 
 // ── Session Card ──
@@ -667,6 +670,8 @@ function buildSessionCard(session) {
   } else if (kind === 'cardio') {
     const dist = session.distance ? ` · ${session.distance} ${session.distanceUnit}` : '';
     summary = `${mins} min · ${capitalize(session.cardioType)}${dist}`;
+  } else {
+    summary = `Unrecognised type "${session.type}" — needs migrating`;
   }
 
   const typeLabel = KIND_LABELS[kind] || String(kind).toUpperCase();
@@ -687,7 +692,7 @@ function buildSessionCard(session) {
 // ── Detail ──
 window.openDetail = async (id) => {
   // Find session from a fresh fetch
-  const sessions = await getSessionsFromDB('all');
+  const sessions = await getSessionsFromDB();
   const session = sessions.find(s => s.id === id);
   if (!session) return;
 
@@ -804,7 +809,7 @@ window.deleteSession = async (id) => {
 
 // ── Progress ──
 async function renderProgressView() {
-  const allSessions = await getSessionsFromDB('all');
+  const allSessions = await getSessionsFromDB();
   const sessions = allSessions.filter(s => sessionKind(s) === 'lifting');
   const names = new Set();
   sessions.forEach(s => (s.exercises || []).forEach(e => { if (e.name) names.add(e.name); }));
@@ -848,7 +853,7 @@ window.renderProgress = async () => {
   }
 
   container.innerHTML = '<div class="loading-state">Loading...</div>';
-  const allSessions = await getSessionsFromDB('all');
+  const allSessions = await getSessionsFromDB();
   const sessions = allSessions.filter(s => sessionKind(s) === 'lifting');
 
   const data = sessions
@@ -965,7 +970,7 @@ window.getCoachingAdvice = async () => {
   output.innerHTML = '<div class="coach-loading"><div class="coach-spinner"></div><p>Claude is reviewing your sessions...</p></div>';
 
   try {
-    coachSessions = (await getSessionsFromDB('all')).slice(0, 20);
+    coachSessions = (await getSessionsFromDB()).slice(0, 20);
 
     if (coachSessions.length === 0) {
       output.innerHTML = '<div class="coach-empty">Log some sessions first and your coach will have data to work with.</div>';
