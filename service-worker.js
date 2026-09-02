@@ -1,15 +1,24 @@
 // ── Train Log Service Worker ──
 // Update this version number every time you deploy
 // This is what forces the home screen app to refresh
-const CACHE_VERSION = 'trainlog-v20260511195528';
+const CACHE_VERSION = 'trainlog-v20260902140419';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Files to cache for offline/fast loading
+// Every module must be listed. cache.addAll() is atomic: if one entry
+// 404s the whole install rejects, the new worker never activates, and the
+// home-screen app keeps running the old one. Update this list in the same
+// commit as any file rename or split.
 const STATIC_FILES = [
   '/',
   '/index.html',
   '/css/styles.css',
-  '/js/firebase.js',
+  '/js/main.js',
+  '/js/db.js',
+  '/js/ui.js',
+  '/js/mat.js',
+  '/js/support.js',
+  '/js/coach.js',
 ];
 
 // Install — cache static files

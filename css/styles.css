@@ -1254,3 +1254,24 @@ select.field-input option { background: var(--surface2); }
   z-index: 100;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Update banner — shown instead of an auto-reload when a log form is dirty,
+   so a new deploy can never destroy a half-filled session entry. */
+.update-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 84px;
+  z-index: 200;
+  padding: 12px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+.update-banner:active { opacity: 0.8; }
