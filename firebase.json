@@ -1,4 +1,8 @@
 {
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
   "functions": [
     {
       "source": "functions",
@@ -18,7 +22,14 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "firestore.rules",
+      "firestore.indexes.json",
+      "functions/**",
+      "scripts/**",
+      "docs/**",
+      "*.md",
+      "deploy.sh"
     ],
     "rewrites": [
       {

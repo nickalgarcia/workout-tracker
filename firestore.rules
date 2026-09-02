@@ -1,0 +1,41 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────
+// Mat Log — Cloud Firestore security rules
+//
+// This is a PERSONAL, SINGLE-USER app. There is exactly one real account.
+// Google sign-in exists for cross-device sync, not for multi-tenancy.
+//
+// Even so, these rules are written so that ANY signed-in Google account can
+// only ever reach its own subtree under /users/{uid}. Someone who signs in
+// with a different account gets an empty app — never a view of this log.
+//
+// Known paths under a user's subtree, all covered by the single rule below:
+//   /users/{uid}                           parent doc (unused by the app)
+//   /users/{uid}/sessions/{sessionId}      mat + support sessions
+//   /users/{uid}/meta/focus                active focus document
+//   /users/{uid}/meta/focus/archive/{id}   past focuses
+//   /users/{uid}/meta/profile              legacy; removed from the app,
+//                                          old docs may still exist
+//
+// Anything NOT matched below is denied — that is Firestore's default and
+// needs no explicit deny rule. (An `allow ... if false` catch-all would be
+// decorative anyway: Firestore ORs allow-rules together, so a later rule
+// can never revoke an earlier grant.)
+//
+// These rules govern the web client only. The scripts in scripts/ use the
+// Firebase Admin SDK, which bypasses rules entirely and is authorized by
+// service-account IAM instead. Nothing here constrains them.
+// ─────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Under rules_version 2 a recursive wildcard matches ZERO or more path
+    // segments, so this one rule covers /users/{uid} itself and everything
+    // beneath it, however deeply nested.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

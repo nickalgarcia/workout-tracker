@@ -15,3 +15,12 @@ firebase-debug.log
 .vscode/
 *.code-workspace
 .DS_Store
+
+# Service account keys — never commit these
+serviceAccountKey.json
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+scripts/node_modules/
+
+# Snapshot of deployed rules, for diffing only — not source of truth
+firestore.rules.live

@@ -1,0 +1,10 @@
+{
+  "name": "mat-log-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-off maintenance scripts. Dependency tree is deliberately separate from functions/.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "firebase-admin": "^13.6.0"
+  }
+}
