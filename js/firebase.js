@@ -15,8 +15,6 @@ import {
   getDocs,
   deleteDoc,
   doc,
-  getDoc,
-  setDoc,
   query,
   orderBy,
   where,
@@ -37,6 +35,19 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// ── Profile ──
+// Single-user app. This replaces the old users/{uid}/meta/profile document
+// and the onboarding flow that populated it. Edit by hand when it changes.
+const PROFILE = {
+  name: 'Nick',
+  startedTraining: '2025-01',
+  belt: 'white',          // update by hand when this changes
+  style: 'no-gi',
+  bodyType: 'smaller and lighter than most training partners',
+  goals: 'recreational — fun, fitness, community. Wants to build an offensive guard game.',
+  weeklyTargets: { mat: 3, support: 2 }
+};
 
 // ── Current user ──
 let currentUser = null;
@@ -75,22 +86,10 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('user-menu-name').textContent = user.displayName || '';
     document.getElementById('user-menu-email').textContent = user.email || '';
 
-    // Check if profile exists
-    const profile = await loadProfile();
-    if (!profile) {
-      // First time user — show onboarding
-      document.getElementById('onboarding-screen').classList.remove('hidden');
-      document.getElementById('app').classList.add('hidden');
-      initOnboardingActivityListeners();
-    } else {
-      // Returning user — go straight to app
-      document.getElementById('onboarding-screen').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
-      navigate('dashboard');
-    }
+    document.getElementById('app').classList.remove('hidden');
+    navigate('dashboard');
   } else {
     document.getElementById('auth-screen').classList.remove('hidden');
-    document.getElementById('onboarding-screen').classList.add('hidden');
     document.getElementById('app').classList.add('hidden');
   }
 });
@@ -123,194 +122,6 @@ async function getSessionsFromDB(type = 'all') {
 async function deleteSessionFromDB(id) {
   await deleteDoc(doc(db, 'users', currentUser.uid, 'sessions', id));
 }
-
-// ── Profile Helpers ──
-function profileRef() {
-  return doc(db, 'users', currentUser.uid, 'meta', 'profile');
-}
-
-async function loadProfile() {
-  try {
-    const snap = await getDoc(profileRef());
-    return snap.exists() ? snap.data() : null;
-  } catch {
-    return null;
-  }
-}
-
-async function saveProfileToDB(profile) {
-  await setDoc(profileRef(), profile);
-}
-
-// Cached profile for the session
-let userProfile = null;
-
-async function getProfile() {
-  if (!userProfile) userProfile = await loadProfile();
-  return userProfile;
-}
-
-// ── Onboarding ──
-function initOnboardingActivityListeners() {
-  const checkboxes = document.querySelectorAll('#ob-activities input[type="checkbox"]');
-  checkboxes.forEach(cb => cb.addEventListener('change', () => {
-    updateDaysGrid('ob-activities', 'ob-days-grid');
-    toggleDumbbellSection('ob-activities', 'ob-dumbbell-section');
-  }));
-}
-
-function initSettingsActivityListeners() {
-  const checkboxes = document.querySelectorAll('#set-activities input[type="checkbox"]');
-  checkboxes.forEach(cb => cb.addEventListener('change', () => {
-    updateDaysGrid('set-activities', 'set-days-grid');
-    toggleDumbbellSection('set-activities', 'set-dumbbell-section');
-  }));
-}
-
-function toggleDumbbellSection(activitiesId, sectionId) {
-  const liftingChecked = document.querySelector(`#${activitiesId} input[value="lifting"]`)?.checked;
-  const section = document.getElementById(sectionId);
-  if (section) section.classList.toggle('hidden', !liftingChecked);
-}
-
-function updateDaysGrid(activitiesId, gridId) {
-  const checked = Array.from(document.querySelectorAll(`#${activitiesId} input:checked`)).map(cb => cb.value);
-  const grid = document.getElementById(gridId);
-
-  if (checked.length === 0) {
-    grid.innerHTML = '<p class="ob-days-hint">Select your activities above first.</p>';
-    return;
-  }
-
-  const labels = { lifting: 'Lifting', bjj: 'BJJ', cardio: 'Cardio', yoga: 'Yoga' };
-  grid.innerHTML = checked.map(activity => `
-    <div class="ob-days-row">
-      <span class="ob-days-label">${labels[activity]}</span>
-      <select class="ob-days-select field-input" data-activity="${activity}">
-        ${[1,2,3,4,5,6,7].map(n => `<option value="${n}">${n}x / week</option>`).join('')}
-      </select>
-    </div>
-  `).join('');
-}
-
-function collectOnboardingData(prefix) {
-  const name = document.getElementById(`${prefix}-name`)?.value.trim() || '';
-  const age = document.getElementById(`${prefix}-age`)?.value || '';
-  const weight = document.getElementById(`${prefix}-weight`)?.value || '';
-  const height = document.getElementById(`${prefix}-height`)?.value.trim() || '';
-  const goal = document.getElementById(`${prefix}-goal`)?.value || '';
-  const gender = document.getElementById(`${prefix}-gender`)?.value || '';
-  const dumbbellMax = document.getElementById(`${prefix}-dumbbell-max`)?.value || '';
-
-  const activitiesId = prefix === 'ob' ? 'ob-activities' : 'set-activities';
-  const daysGridId = prefix === 'ob' ? 'ob-days-grid' : 'set-days-grid';
-  const equipmentId = prefix === 'ob' ? 'ob-equipment' : 'set-equipment';
-
-  const activities = Array.from(document.querySelectorAll(`#${activitiesId} input:checked`)).map(cb => cb.value);
-  const equipment = Array.from(document.querySelectorAll(`#${equipmentId} input:checked`)).map(cb => cb.value);
-
-  const trainingDays = {};
-  document.querySelectorAll(`#${daysGridId} .ob-days-select`).forEach(sel => {
-    trainingDays[sel.dataset.activity] = parseInt(sel.value);
-  });
-
-  return { name, age: parseInt(age) || null, weight: parseInt(weight) || null, height, goal, gender, dumbbellMax: parseInt(dumbbellMax) || null, activities, equipment, trainingDays };
-}
-
-window.selectGoal = (btn, hiddenId) => {
-  btn.closest('.ob-goal-grid').querySelectorAll('.ob-goal-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(hiddenId).value = btn.dataset.value;
-};
-
-window.skipOnboarding = () => {
-  document.getElementById('onboarding-screen').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  navigate('dashboard');
-};
-
-window.saveOnboarding = async () => {
-  const profile = collectOnboardingData('ob');
-  try {
-    await saveProfileToDB(profile);
-    userProfile = profile;
-    showToast('Profile saved!');
-    document.getElementById('onboarding-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    navigate('dashboard');
-  } catch (e) {
-    console.error(e);
-    showToast('Error saving profile. Try again.');
-  }
-};
-
-// ── Settings ──
-async function initSettingsView() {
-  const profile = await getProfile();
-  if (!profile) return;
-
-  if (profile.name) document.getElementById('set-name').value = profile.name;
-  if (profile.age) document.getElementById('set-age').value = profile.age;
-  if (profile.weight) document.getElementById('set-weight').value = profile.weight;
-  if (profile.height) document.getElementById('set-height').value = profile.height;
-  if (profile.dumbbellMax) document.getElementById('set-dumbbell-max').value = profile.dumbbellMax;
-  if (profile.goal) {
-    document.getElementById('set-goal').value = profile.goal;
-    document.querySelectorAll('#view-settings .ob-goal-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.value === profile.goal);
-    });
-  }
-
-  if (profile.gender) {
-    document.getElementById('set-gender').value = profile.gender;
-    document.querySelectorAll('#view-settings .ob-goal-grid .ob-goal-btn').forEach(btn => {
-      if (btn.getAttribute('onclick')?.includes('set-gender')) {
-        btn.classList.toggle('active', btn.dataset.value === profile.gender);
-      }
-    });
-  }
-
-  // Activities
-  if (profile.activities) {
-    document.querySelectorAll('#set-activities input').forEach(cb => {
-      cb.checked = profile.activities.includes(cb.value);
-    });
-    updateDaysGrid('set-activities', 'set-days-grid');
-    toggleDumbbellSection('set-activities', 'set-dumbbell-section');
-    // Set saved days
-    if (profile.trainingDays) {
-      setTimeout(() => {
-        document.querySelectorAll('#set-days-grid .ob-days-select').forEach(sel => {
-          if (profile.trainingDays[sel.dataset.activity]) {
-            sel.value = profile.trainingDays[sel.dataset.activity];
-          }
-        });
-      }, 50);
-    }
-  }
-
-  // Equipment
-  if (profile.equipment) {
-    document.querySelectorAll('#set-equipment input').forEach(cb => {
-      cb.checked = profile.equipment.includes(cb.value);
-    });
-  }
-
-  initSettingsActivityListeners();
-}
-
-window.saveSettings = async () => {
-  const profile = collectOnboardingData('set');
-  try {
-    await saveProfileToDB(profile);
-    userProfile = profile;
-    showToast('Settings saved!');
-    navigate('dashboard');
-  } catch (e) {
-    console.error(e);
-    showToast('Error saving settings.');
-  }
-};
 
 // ── Daredevil Training Plans ──
 const TRAINING_PLANS = {
@@ -361,43 +172,8 @@ function loadPlanExercises(planKey) {
   if (plan.exercises.length === 0) {
     addExerciseRow();
   } else {
-    plan.exercises.forEach(name => addExerciseRowWithName(name));
+    plan.exercises.forEach(name => buildExerciseRow(name, 3));
   }
-}
-
-function addExerciseRowWithName(exerciseName) {
-  exerciseRowCount++;
-  const id = exerciseRowCount;
-  const list = document.getElementById('exercise-list');
-  const options = PRESET_EXERCISES.map(n =>
-    `<option value="${n}" ${n === exerciseName ? 'selected' : ''}>${n}</option>`
-  ).join('');
-  const row = document.createElement('div');
-  row.className = 'exercise-row';
-  row.id = `exercise-row-${id}`;
-  row.innerHTML = `
-    <div class="exercise-row-top">
-      <select class="exercise-select" id="exercise-select-${id}" onchange="window.handleExerciseSelect(${id})">
-        <option value="">Pick exercise...</option>
-        ${options}
-      </select>
-      <button class="yt-btn" onclick="window.openExerciseYT(${id})" title="Search YouTube">▶</button>
-      <button class="remove-btn" onclick="window.removeExerciseRow(${id})">✕</button>
-    </div>
-    <div id="custom-name-wrapper-${id}" style="display:none; margin-bottom:10px;">
-      <input type="text" class="exercise-name-input" id="custom-name-${id}" placeholder="Exercise name..." style="width:100%;" />
-    </div>
-    <div class="sets-grid">
-      <span>Set</span><span>Reps</span><span>Weight (lbs)</span><span></span>
-    </div>
-    <div id="sets-${id}"></div>
-    <button class="add-set-btn" onclick="window.addSetRow(${id})">+ Add Set</button>
-  `;
-  list.appendChild(row);
-  // Start with 3 sets for plan exercises
-  addSetRow(id);
-  addSetRow(id);
-  addSetRow(id);
 }
 
 // ── Lifting Module ──
@@ -428,11 +204,16 @@ function initLiftingForm() {
   watchFormDirty(['lifting-date', 'lifting-notes']);
 }
 
-window.addExerciseRow = () => {
+// Builds one exercise row. `name` preselects an exercise (plan rows);
+// `setCount` is how many blank set rows to start with — 3 for plan
+// exercises, 1 for a row added by hand.
+function buildExerciseRow(name = '', setCount = 1) {
   exerciseRowCount++;
   const id = exerciseRowCount;
   const list = document.getElementById('exercise-list');
-  const options = PRESET_EXERCISES.map(n => `<option value="${n}">${n}</option>`).join('');
+  const options = PRESET_EXERCISES
+    .map(n => `<option value="${n}"${n === name ? ' selected' : ''}>${n}</option>`)
+    .join('');
   const row = document.createElement('div');
   row.className = 'exercise-row';
   row.id = `exercise-row-${id}`;
@@ -455,8 +236,10 @@ window.addExerciseRow = () => {
     <button class="add-set-btn" onclick="window.addSetRow(${id})">+ Add Set</button>
   `;
   list.appendChild(row);
-  addSetRow(id);
-};
+  for (let i = 0; i < setCount; i++) addSetRow(id);
+}
+
+window.addExerciseRow = () => buildExerciseRow();
 
 window.openExerciseYT = (id) => {
   const select = document.getElementById(`exercise-select-${id}`);
@@ -657,12 +440,12 @@ function watchFormDirty(formIds) {
 }
 
 // ── App / Navigation ──
-const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'progress', 'coach', 'settings'];
+const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'focus', 'progress', 'coach'];
 let viewHistory = ['dashboard'];
 
 window.navigate = async (viewName) => {
   // Warn if leaving a form with unsaved data
-  const logViews = ['log-lifting', 'log-bjj', 'log-yoga', 'log-cardio', 'log-pilates'];
+  const logViews = ['log-lifting', 'log-bjj', 'log-cardio'];
   const currentView = viewHistory[viewHistory.length - 1];
   if (formIsDirty && logViews.includes(currentView) && viewName !== currentView) {
     if (!confirm('You have unsaved changes. Leave without saving?')) return;
@@ -683,24 +466,21 @@ window.navigate = async (viewName) => {
 
   const titles = {
     'dashboard': 'TRAIN LOG', 'log-lifting': 'LOG LIFTING',
-    'log-bjj': 'LOG BJJ', 'history': 'HISTORY',
-    'detail': 'SESSION', 'progress': 'PROGRESS',
-    'coach': 'COACH', 'settings': 'SETTINGS',
-    'log-yoga': 'LOG YOGA', 'log-cardio': 'LOG CARDIO',
-    'log-pilates': 'LOG PILATES'
+    'log-bjj': 'LOG BJJ', 'log-cardio': 'LOG CARDIO',
+    'history': 'HISTORY', 'detail': 'SESSION',
+    'focus': 'FOCUS', 'progress': 'PROGRESS',
+    'coach': 'COACH'
   };
   document.getElementById('page-title').textContent = titles[viewName] || 'TRAIN LOG';
 
   if (viewName === 'dashboard') await renderDashboard();
   if (viewName === 'log-lifting') initLiftingForm();
   if (viewName === 'log-bjj') initBJJForm();
-  if (viewName === 'log-yoga') initYogaForm();
   if (viewName === 'log-cardio') initCardioForm();
-  if (viewName === 'log-pilates') initPilatesForm();
   if (viewName === 'history') await renderHistory('all');
   if (viewName === 'progress') await renderProgressView();
   if (viewName === 'coach') initCoachView();
-  if (viewName === 'settings') await initSettingsView();
+  // 'focus' is a stub for now — the focus feature fills it in.
 };
 
 function goBack() {
@@ -713,12 +493,10 @@ function goBack() {
 // ── Render Dashboard ──
 async function renderDashboard() {
   const h = new Date().getHours();
-  const profile = await getProfile();
-  const firstName = profile?.name || currentUser?.displayName?.split(' ')[0] || 'there';
+  const firstName = PROFILE.name;
   const greeting = h < 12 ? `Good morning, ${firstName}.` : h < 17 ? `Good afternoon, ${firstName}.` : `Good evening, ${firstName}.`;
   document.getElementById('greeting').textContent = greeting;
 
-  // Fetch sessions for streak + activity cards
   const allSessions = await getSessionsFromDB('all');
 
   // Build streak — count unique training days in last 7 days
@@ -739,17 +517,6 @@ async function renderDashboard() {
       : 'No sessions yet this week';
   }
 
-  // Build activity cards based on profile — fallback to all if no profile
-  const activities = profile?.activities?.length ? profile.activities : ['lifting', 'bjj', 'cardio', 'yoga'];
-  const allCards = {
-    lifting: `<button class="action-card lifting" onclick="window.navigate('log-lifting')"><span class="card-icon">🏋️</span><span class="card-label">Log Lifting</span><span class="card-sub">Sets · Reps · Weight</span></button>`,
-    bjj:     `<button class="action-card bjj" onclick="window.navigate('log-bjj')"><span class="card-icon">🥋</span><span class="card-label">Log BJJ</span><span class="card-sub">Duration · Techniques</span></button>`,
-    cardio:  `<button class="action-card cardio" onclick="window.navigate('log-cardio')"><span class="card-icon">🏃</span><span class="card-label">Log Cardio</span><span class="card-sub">Duration · Distance</span></button>`,
-    yoga:    `<button class="action-card yoga" onclick="window.navigate('log-yoga')"><span class="card-icon">🧘</span><span class="card-label">Log Yoga</span><span class="card-sub">Duration · Style</span></button>`,
-    pilates: `<button class="action-card pilates" onclick="window.navigate('log-pilates')"><span class="card-icon">🤸</span><span class="card-label">Log Pilates</span><span class="card-sub">Style · Focus</span></button>`,
-  };
-  document.querySelector('.action-cards').innerHTML = activities.map(a => allCards[a] || '').join('');
-
   const container = document.getElementById('recent-sessions');
   container.innerHTML = '<div class="loading-state">Loading...</div>';
 
@@ -759,7 +526,7 @@ async function renderDashboard() {
       container.innerHTML = `
         <div class="welcome-state">
           <div class="welcome-icon">👋</div>
-          <div class="welcome-title">Welcome to Train Log${firstName !== 'there' ? ', ' + firstName : ''}!</div>
+          <div class="welcome-title">Welcome to Train Log, ${firstName}!</div>
           <div class="welcome-text">You're all set up. Tap any activity above to log your first session. Your AI Coach will have personalized advice after a few sessions.</div>
         </div>`;
     } else {
@@ -783,7 +550,7 @@ async function renderHistory(filter) {
       typeCounts[s.type] = (typeCounts[s.type] || 0) + 1;
     });
 
-    const typeLabels = { lifting: 'Lifting', bjj: 'BJJ', cardio: 'Cardio', yoga: 'Yoga', pilates: 'Pilates' };
+    const typeLabels = { lifting: 'Lifting', bjj: 'BJJ', cardio: 'Cardio' };
     const options = [
       `<option value="all">All Sessions (${allSessions.length})</option>`,
       ...Object.keys(typeCounts).sort().map(type =>
@@ -824,16 +591,12 @@ function buildSessionCard(session) {
     summary = planLabel + (shown.join(', ') + extra || 'Lifting session');
   } else if (type === 'bjj') {
     summary = `${session.duration} min · ${capitalize(session.sessionType)}`;
-  } else if (type === 'yoga') {
-    summary = `${session.duration} min · ${capitalize(session.style)}`;
   } else if (type === 'cardio') {
     const dist = session.distance ? ` · ${session.distance} ${session.distanceUnit}` : '';
     summary = `${session.duration} min · ${capitalize(session.cardioType)}${dist}`;
-  } else if (type === 'pilates') {
-    summary = `${session.duration} min · ${capitalize(session.style)} · ${capitalize(session.focus?.replace('_', ' ') || '')}`;
   }
 
-  const typeColors = { lifting: 'lifting', bjj: 'bjj', yoga: 'yoga', cardio: 'cardio-type', pilates: 'pilates-type' };
+  const typeColors = { lifting: 'lifting', bjj: 'bjj', cardio: 'cardio-type' };
   const colorClass = typeColors[type] || 'lifting';
 
   return `
@@ -917,17 +680,6 @@ function buildDetailHTML(session) {
       ${techniques ? `<div class="detail-section"><div class="detail-section-title">Techniques</div><div class="detail-technique-list">${techniques}</div></div>` : ''}
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
-  } else if (type === 'yoga') {
-    body = `
-      <div class="detail-section">
-        <div class="detail-section-title">Details</div>
-        <div class="detail-meta">
-          <div class="detail-meta-item"><span>Duration</span>${session.duration} min</div>
-          <div class="detail-meta-item"><span>Style</span>${capitalize(session.style)}</div>
-        </div>
-      </div>
-      ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
-    `;
   } else if (type === 'cardio') {
     body = `
       <div class="detail-section">
@@ -940,21 +692,9 @@ function buildDetailHTML(session) {
       </div>
       ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
     `;
-  } else if (type === 'pilates') {
-    body = `
-      <div class="detail-section">
-        <div class="detail-section-title">Details</div>
-        <div class="detail-meta">
-          <div class="detail-meta-item"><span>Duration</span>${session.duration} min</div>
-          <div class="detail-meta-item"><span>Style</span>${capitalize(session.style)}</div>
-          <div class="detail-meta-item"><span>Focus</span>${capitalize(session.focus?.replace('_', ' ') || '')}</div>
-        </div>
-      </div>
-      ${session.notes ? `<div class="detail-section"><div class="detail-section-title">Notes</div><div class="detail-notes">${session.notes}</div></div>` : ''}
-    `;
   }
 
-  const typeLabels = { lifting: 'LIFTING', bjj: 'BJJ', yoga: 'YOGA', cardio: 'CARDIO', pilates: 'PILATES' };
+  const typeLabels = { lifting: 'LIFTING', bjj: 'BJJ', cardio: 'CARDIO' };
   const typeColorClass = type;
 
   return `
@@ -1066,43 +806,6 @@ window.renderProgress = async () => {
   `;
 };
 
-// ── Yoga Module ──
-function initYogaForm() {
-  document.getElementById('yoga-date').value = todayStr();
-  document.getElementById('yoga-duration').value = '';
-  document.getElementById('yoga-notes').value = '';
-  document.getElementById('yoga-style').value = 'vinyasa';
-  document.querySelectorAll('#view-log-yoga .toggle-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.value === 'vinyasa');
-  });
-  watchFormDirty(['yoga-date', 'yoga-duration', 'yoga-notes']);
-}
-
-window.saveYoga = async () => {
-  const date = document.getElementById('yoga-date').value;
-  if (!date) { showToast('Please select a date'); return; }
-  const duration = document.getElementById('yoga-duration').value;
-  if (!duration) { showToast('Please enter duration'); return; }
-  const style = document.getElementById('yoga-style').value;
-  const notes = document.getElementById('yoga-notes').value.trim();
-
-  const btn = document.getElementById('save-yoga-btn');
-  btn.textContent = 'Saving...';
-  btn.disabled = true;
-  try {
-    clearFormDirty();
-    await saveSessionToDB({ type: 'yoga', date, duration: parseInt(duration), style, notes });
-    showToast('Yoga session logged! 🧘');
-    navigate('dashboard');
-  } catch (e) {
-    console.error(e);
-    showToast('Error saving. Try again.');
-  } finally {
-    btn.textContent = 'Save Session';
-    btn.disabled = false;
-  }
-};
-
 // ── Cardio Module ──
 function initCardioForm() {
   document.getElementById('cardio-date').value = todayStr();
@@ -1151,53 +854,9 @@ window.saveCardio = async () => {
   }
 };
 
-// ── Pilates Module ──
-function initPilatesForm() {
-  document.getElementById('pilates-date').value = todayStr();
-  document.getElementById('pilates-duration').value = '';
-  document.getElementById('pilates-notes').value = '';
-  document.getElementById('pilates-style').value = 'mat';
-  document.getElementById('pilates-focus').value = 'core';
-  document.querySelectorAll('#view-log-pilates .toggle-btn').forEach(btn => {
-    const group = btn.closest('.toggle-group');
-    const hiddenId = group.nextElementSibling?.id;
-    btn.classList.toggle('active',
-      (hiddenId === 'pilates-style' && btn.dataset.value === 'mat') ||
-      (hiddenId === 'pilates-focus' && btn.dataset.value === 'core')
-    );
-  });
-  watchFormDirty(['pilates-date', 'pilates-duration', 'pilates-notes']);
-}
-
-window.savePilates = async () => {
-  const date = document.getElementById('pilates-date').value;
-  if (!date) { showToast('Please select a date'); return; }
-  const duration = document.getElementById('pilates-duration').value;
-  if (!duration) { showToast('Please enter duration'); return; }
-  const style = document.getElementById('pilates-style').value;
-  const focus = document.getElementById('pilates-focus').value;
-  const notes = document.getElementById('pilates-notes').value.trim();
-
-  const btn = document.getElementById('save-pilates-btn');
-  btn.textContent = 'Saving...';
-  btn.disabled = true;
-  try {
-    clearFormDirty();
-    await saveSessionToDB({ type: 'pilates', date, duration: parseInt(duration), style, focus, notes });
-    showToast('Pilates session logged! 🤸');
-    navigate('dashboard');
-  } catch (e) {
-    console.error(e);
-    showToast('Error saving. Try again.');
-  } finally {
-    btn.textContent = 'Save Session';
-    btn.disabled = false;
-  }
-};
-
 // ── Coach ──
 let coachSessions = [];
-let coachProfile = {};
+let coachProfile = PROFILE;
 let chatHistory = [];
 
 function initCoachView() {
@@ -1220,7 +879,6 @@ window.getCoachingAdvice = async () => {
 
   try {
     coachSessions = (await getSessionsFromDB('all')).slice(0, 20);
-    coachProfile = await getProfile() || {};
 
     if (coachSessions.length === 0) {
       output.innerHTML = '<div class="coach-empty">Log some sessions first and your coach will have data to work with.</div>';

@@ -28,89 +28,6 @@
     </div>
   </div>
 
-  <!-- Onboarding Screen -->
-  <div id="onboarding-screen" class="hidden">
-    <div id="onboarding-box">
-      <div class="onboarding-header">
-        <h1 class="auth-logo">SET UP YOUR PROFILE</h1>
-        <p class="auth-sub">This helps your AI Coach give you personalized advice. You can update it anytime in Settings.</p>
-        <button class="onboarding-skip-btn" onclick="window.skipOnboarding()">Skip for now</button>
-      </div>
-      <div class="onboarding-form">
-        <div class="form-section">
-          <label class="field-label">Your First Name</label>
-          <input type="text" id="ob-name" class="field-input" placeholder="e.g. Nick" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Age</label>
-          <input type="number" id="ob-age" class="field-input" placeholder="e.g. 38" min="13" max="100" />
-        </div>
-        <div class="ob-row">
-          <div class="form-section">
-            <label class="field-label">Weight (lbs)</label>
-            <input type="number" id="ob-weight" class="field-input" placeholder="e.g. 150" />
-          </div>
-          <div class="form-section">
-            <label class="field-label">Height</label>
-            <input type="text" id="ob-height" class="field-input" placeholder="e.g. 5'8" />
-          </div>
-        </div>
-        <div class="form-section">
-          <label class="field-label">Gender</label>
-          <div class="ob-goal-grid">
-            <button class="ob-goal-btn" data-value="male" onclick="window.selectGoal(this, 'ob-gender')">Male</button>
-            <button class="ob-goal-btn" data-value="female" onclick="window.selectGoal(this, 'ob-gender')">Female</button>
-            <button class="ob-goal-btn" data-value="nonbinary" onclick="window.selectGoal(this, 'ob-gender')">Non-binary</button>
-            <button class="ob-goal-btn" data-value="prefer_not" onclick="window.selectGoal(this, 'ob-gender')">Prefer not to say</button>
-          </div>
-          <input type="hidden" id="ob-gender" value="" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">What do you train?</label>
-          <div class="ob-checks" id="ob-activities">
-            <label class="ob-check"><input type="checkbox" value="lifting" /> Lifting</label>
-            <label class="ob-check"><input type="checkbox" value="bjj" /> BJJ</label>
-            <label class="ob-check"><input type="checkbox" value="cardio" /> Cardio</label>
-            <label class="ob-check"><input type="checkbox" value="yoga" /> Yoga</label>
-            <label class="ob-check"><input type="checkbox" value="pilates" /> Pilates</label>
-          </div>
-        </div>
-        <div class="form-section">
-          <label class="field-label">Training days per week</label>
-          <div class="ob-days-grid" id="ob-days-grid">
-            <p class="ob-days-hint">Select your activities above first.</p>
-          </div>
-        </div>
-        <div class="form-section">
-          <label class="field-label">Primary Goal</label>
-          <div class="ob-goal-grid">
-            <button class="ob-goal-btn" data-value="strength" onclick="window.selectGoal(this, 'ob-goal')">Strength</button>
-            <button class="ob-goal-btn" data-value="weight_loss" onclick="window.selectGoal(this, 'ob-goal')">Weight Loss</button>
-            <button class="ob-goal-btn" data-value="endurance" onclick="window.selectGoal(this, 'ob-goal')">Endurance</button>
-            <button class="ob-goal-btn" data-value="general" onclick="window.selectGoal(this, 'ob-goal')">General Fitness</button>
-          </div>
-          <input type="hidden" id="ob-goal" value="" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Equipment Available</label>
-          <div class="ob-checks" id="ob-equipment">
-            <label class="ob-check"><input type="checkbox" value="dumbbells" /> Dumbbells</label>
-            <label class="ob-check"><input type="checkbox" value="barbell" /> Barbell</label>
-            <label class="ob-check"><input type="checkbox" value="gym" /> Gym Membership</label>
-            <label class="ob-check"><input type="checkbox" value="bodyweight" /> Bodyweight Only</label>
-          </div>
-        </div>
-        <div class="form-section hidden" id="ob-dumbbell-section">
-          <label class="field-label">Heaviest Dumbbells (lbs)</label>
-          <input type="number" id="ob-dumbbell-max" class="field-input" placeholder="e.g. 25" min="1" max="200" />
-          <p class="field-hint">This helps your Coach know when to suggest alternatives to adding weight.</p>
-        </div>
-        <button class="save-btn" onclick="window.saveOnboarding()">Save Profile and Start Training</button>
-        <div style="height: 32px;"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- App Shell -->
   <div id="app" class="hidden">
 
@@ -127,7 +44,6 @@
     <div id="user-menu" class="user-menu hidden">
       <div id="user-menu-name" class="user-menu-name"></div>
       <div id="user-menu-email" class="user-menu-email"></div>
-      <button class="user-menu-item" onclick="window.hideUserMenu(); window.navigate('settings');">Settings</button>
       <button class="user-menu-signout" onclick="window.signOut()">Sign out</button>
     </div>
     <div id="user-menu-overlay" class="user-menu-overlay hidden" onclick="window.hideUserMenu()"></div>
@@ -157,11 +73,6 @@
             <span class="card-icon">🏃</span>
             <span class="card-label">Log Cardio</span>
             <span class="card-sub">Duration · Distance</span>
-          </button>
-          <button class="action-card yoga" onclick="window.navigate('log-yoga')">
-            <span class="card-icon">🧘</span>
-            <span class="card-label">Log Yoga</span>
-            <span class="card-sub">Duration · Style</span>
           </button>
         </div>
         <div class="section-header">
@@ -240,34 +151,6 @@
         <button class="save-btn" id="save-bjj-btn" onclick="window.saveBJJ()">Save Session</button>
       </section>
 
-      <!-- Log Yoga -->
-      <section id="view-log-yoga" class="view">
-        <div class="form-section">
-          <label class="field-label">Date</label>
-          <input type="date" id="yoga-date" class="field-input" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Duration (minutes)</label>
-          <input type="number" id="yoga-duration" class="field-input" placeholder="e.g. 45" min="1" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Style</label>
-          <div class="toggle-group style-toggle">
-            <button class="toggle-btn active" data-value="vinyasa" onclick="window.selectToggle(this, 'yoga-style')">Vinyasa</button>
-            <button class="toggle-btn" data-value="yin" onclick="window.selectToggle(this, 'yoga-style')">Yin</button>
-            <button class="toggle-btn" data-value="hatha" onclick="window.selectToggle(this, 'yoga-style')">Hatha</button>
-            <button class="toggle-btn" data-value="restorative" onclick="window.selectToggle(this, 'yoga-style')">Restore</button>
-            <button class="toggle-btn" data-value="other" onclick="window.selectToggle(this, 'yoga-style')">Other</button>
-          </div>
-          <input type="hidden" id="yoga-style" value="vinyasa" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Notes (optional)</label>
-          <textarea id="yoga-notes" class="field-input field-textarea" placeholder="How did it feel? Areas of focus?"></textarea>
-        </div>
-        <button class="save-btn" id="save-yoga-btn" onclick="window.saveYoga()">Save Session</button>
-      </section>
-
       <!-- Log Cardio -->
       <section id="view-log-cardio" class="view">
         <div class="form-section">
@@ -305,45 +188,6 @@
           <textarea id="cardio-notes" class="field-input field-textarea" placeholder="Route, pace, how it felt?"></textarea>
         </div>
         <button class="save-btn" id="save-cardio-btn" onclick="window.saveCardio()">Save Session</button>
-      </section>
-
-      <!-- Log Pilates -->
-      <section id="view-log-pilates" class="view">
-        <div class="form-section">
-          <label class="field-label">Date</label>
-          <input type="date" id="pilates-date" class="field-input" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Duration (minutes)</label>
-          <input type="number" id="pilates-duration" class="field-input" placeholder="e.g. 50" min="1" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Style</label>
-          <div class="toggle-group style-toggle">
-            <button class="toggle-btn active" data-value="mat" onclick="window.selectToggle(this, 'pilates-style')">Mat</button>
-            <button class="toggle-btn" data-value="reformer" onclick="window.selectToggle(this, 'pilates-style')">Reformer</button>
-            <button class="toggle-btn" data-value="tower" onclick="window.selectToggle(this, 'pilates-style')">Tower</button>
-            <button class="toggle-btn" data-value="chair" onclick="window.selectToggle(this, 'pilates-style')">Chair</button>
-            <button class="toggle-btn" data-value="other" onclick="window.selectToggle(this, 'pilates-style')">Other</button>
-          </div>
-          <input type="hidden" id="pilates-style" value="mat" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Focus Area</label>
-          <div class="toggle-group style-toggle">
-            <button class="toggle-btn active" data-value="core" onclick="window.selectToggle(this, 'pilates-focus')">Core</button>
-            <button class="toggle-btn" data-value="full_body" onclick="window.selectToggle(this, 'pilates-focus')">Full Body</button>
-            <button class="toggle-btn" data-value="upper" onclick="window.selectToggle(this, 'pilates-focus')">Upper</button>
-            <button class="toggle-btn" data-value="lower" onclick="window.selectToggle(this, 'pilates-focus')">Lower</button>
-            <button class="toggle-btn" data-value="flexibility" onclick="window.selectToggle(this, 'pilates-focus')">Flexibility</button>
-          </div>
-          <input type="hidden" id="pilates-focus" value="core" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Notes (optional)</label>
-          <textarea id="pilates-notes" class="field-input field-textarea" placeholder="How did it feel? Any breakthroughs?"></textarea>
-        </div>
-        <button class="save-btn" id="save-pilates-btn" onclick="window.savePilates()">Save Session</button>
       </section>
 
       <!-- History -->
@@ -403,81 +247,11 @@
         </div>
       </section>
 
-      <!-- Settings -->
-      <section id="view-settings" class="view">
-        <div class="settings-intro">
-          <p class="settings-intro-text">Update your profile so your AI Coach stays accurate as your training evolves.</p>
+      <!-- Focus (stub — filled in by the focus feature) -->
+      <section id="view-focus" class="view">
+        <div id="focus-content">
+          <div class="empty-state">Focus</div>
         </div>
-        <div class="form-section">
-          <label class="field-label">Your First Name</label>
-          <input type="text" id="set-name" class="field-input" placeholder="e.g. Nick" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Age</label>
-          <input type="number" id="set-age" class="field-input" placeholder="e.g. 38" />
-        </div>
-        <div class="ob-row">
-          <div class="form-section">
-            <label class="field-label">Weight (lbs)</label>
-            <input type="number" id="set-weight" class="field-input" placeholder="e.g. 150" />
-          </div>
-          <div class="form-section">
-            <label class="field-label">Height</label>
-            <input type="text" id="set-height" class="field-input" placeholder="e.g. 5'8" />
-          </div>
-        </div>
-        <div class="form-section">
-          <label class="field-label">Gender</label>
-          <div class="ob-goal-grid">
-            <button class="ob-goal-btn" data-value="male" onclick="window.selectGoal(this, 'set-gender')">Male</button>
-            <button class="ob-goal-btn" data-value="female" onclick="window.selectGoal(this, 'set-gender')">Female</button>
-            <button class="ob-goal-btn" data-value="nonbinary" onclick="window.selectGoal(this, 'set-gender')">Non-binary</button>
-            <button class="ob-goal-btn" data-value="prefer_not" onclick="window.selectGoal(this, 'set-gender')">Prefer not to say</button>
-          </div>
-          <input type="hidden" id="set-gender" value="" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">What do you train?</label>
-          <div class="ob-checks" id="set-activities">
-            <label class="ob-check"><input type="checkbox" value="lifting" /> Lifting</label>
-            <label class="ob-check"><input type="checkbox" value="bjj" /> BJJ</label>
-            <label class="ob-check"><input type="checkbox" value="cardio" /> Cardio</label>
-            <label class="ob-check"><input type="checkbox" value="yoga" /> Yoga</label>
-            <label class="ob-check"><input type="checkbox" value="pilates" /> Pilates</label>
-          </div>
-        </div>
-        <div class="form-section">
-          <label class="field-label">Training days per week</label>
-          <div class="ob-days-grid" id="set-days-grid">
-            <p class="ob-days-hint">Select your activities above first.</p>
-          </div>
-        </div>
-        <div class="form-section">
-          <label class="field-label">Primary Goal</label>
-          <div class="ob-goal-grid">
-            <button class="ob-goal-btn" data-value="strength" onclick="window.selectGoal(this, 'set-goal')">Strength</button>
-            <button class="ob-goal-btn" data-value="weight_loss" onclick="window.selectGoal(this, 'set-goal')">Weight Loss</button>
-            <button class="ob-goal-btn" data-value="endurance" onclick="window.selectGoal(this, 'set-goal')">Endurance</button>
-            <button class="ob-goal-btn" data-value="general" onclick="window.selectGoal(this, 'set-goal')">General Fitness</button>
-          </div>
-          <input type="hidden" id="set-goal" value="" />
-        </div>
-        <div class="form-section">
-          <label class="field-label">Equipment Available</label>
-          <div class="ob-checks" id="set-equipment">
-            <label class="ob-check"><input type="checkbox" value="dumbbells" /> Dumbbells</label>
-            <label class="ob-check"><input type="checkbox" value="barbell" /> Barbell</label>
-            <label class="ob-check"><input type="checkbox" value="gym" /> Gym Membership</label>
-            <label class="ob-check"><input type="checkbox" value="bodyweight" /> Bodyweight Only</label>
-          </div>
-        </div>
-        <div class="form-section hidden" id="set-dumbbell-section">
-          <label class="field-label">Heaviest Dumbbells (lbs)</label>
-          <input type="number" id="set-dumbbell-max" class="field-input" placeholder="e.g. 25" min="1" max="200" />
-          <p class="field-hint">This helps your Coach know when to suggest alternatives to adding weight.</p>
-        </div>
-        <button class="save-btn" onclick="window.saveSettings()">Save Settings</button>
-        <div style="height: 32px;"></div>
       </section>
 
     </main>
@@ -492,6 +266,10 @@
         <span class="nav-icon">&#9776;</span>
         <span class="nav-label">History</span>
       </button>
+      <button class="nav-btn" data-view="focus" onclick="window.navigate('focus')">
+        <span class="nav-icon">&#9678;</span>
+        <span class="nav-label">Focus</span>
+      </button>
       <button class="nav-btn" data-view="progress" onclick="window.navigate('progress')">
         <span class="nav-icon">&#8599;</span>
         <span class="nav-label">Progress</span>
@@ -499,10 +277,6 @@
       <button class="nav-btn" data-view="coach" onclick="window.navigate('coach')">
         <span class="nav-icon">&#9676;</span>
         <span class="nav-label">Coach</span>
-      </button>
-      <button class="nav-btn" data-view="settings" onclick="window.navigate('settings')">
-        <span class="nav-icon">&#9881;</span>
-        <span class="nav-label">Settings</span>
       </button>
     </nav>
 

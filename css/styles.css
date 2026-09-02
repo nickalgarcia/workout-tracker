@@ -11,12 +11,8 @@
   --lifting:    #c8f04a;
   --bjj:        #4ac8f0;
   --bjj-dim:    rgba(74,200,240,0.12);
-  --yoga:       #c084fc;
-  --yoga-dim:   rgba(192,132,252,0.12);
   --cardio:     #fb923c;
   --cardio-dim: rgba(251,146,60,0.12);
-  --pilates:    #f472b6;
-  --pilates-dim: rgba(244,114,182,0.12);
   --danger:     #f04a4a;
   --radius:     12px;
   --radius-sm:  8px;
@@ -134,9 +130,7 @@ body {
 .action-card:active { transform: scale(0.97); }
 .action-card.lifting:hover { border-color: var(--lifting); background: var(--accent-dim); }
 .action-card.bjj:hover { border-color: var(--bjj); background: var(--bjj-dim); }
-.action-card.yoga:hover { border-color: var(--yoga); background: var(--yoga-dim); }
 .action-card.cardio:hover { border-color: var(--cardio); background: var(--cardio-dim); }
-.action-card.pilates:hover { border-color: var(--pilates); background: var(--pilates-dim); }
 .card-icon { font-size: 28px; margin-bottom: 12px; }
 .card-label {
   font-family: var(--font-head);
@@ -193,12 +187,8 @@ body {
 }
 .session-card-type.lifting { color: var(--lifting); }
 .session-card-type.bjj { color: var(--bjj); }
-.session-card-type.yoga { color: var(--yoga); }
 .session-card-type.cardio-type { color: var(--cardio); }
-.session-card-type.pilates-type { color: var(--pilates); }
-.detail-type.yoga { color: var(--yoga); }
 .detail-type.cardio { color: var(--cardio); }
-.detail-type.pilates { color: var(--pilates); }
 
 /* ── Style Toggle (wrapping) ── */
 .style-toggle {
