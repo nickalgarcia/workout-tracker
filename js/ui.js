@@ -88,13 +88,13 @@ export function selectToggle(btn, hiddenId) {
 }
 
 // ── Navigation ──
-const TOP_LEVEL_VIEWS = ['dashboard', 'history', 'focus', 'progress', 'coach'];
+const TOP_LEVEL_VIEWS = ['dashboard', 'year', 'history', 'focus', 'progress', 'coach'];
 const LOG_VIEWS = ['log-lifting', 'log-mat', 'log-cardio'];
 
 const TITLES = {
   'dashboard': 'MAT LOG', 'log-lifting': 'LOG LIFTING',
   'log-mat': 'LOG MAT SESSION', 'log-cardio': 'LOG CARDIO',
-  'history': 'HISTORY', 'detail': 'SESSION',
+  'history': 'HISTORY', 'detail': 'SESSION', 'year': 'YEAR',
   'focus': 'FOCUS', 'progress': 'PROGRESS',
   'coach': 'COACH'
 };

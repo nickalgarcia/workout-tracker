@@ -1821,3 +1821,170 @@ select.field-input option { background: var(--surface2); }
 }
 .progress-table td { font-family: var(--font-head); border-bottom: var(--hair); }
 .auth-logo { font-family: var(--font-head); font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
+
+/* ── Year view ──
+   53 columns x 7 rows, one cell per day. Sized in fr units, not the
+   6px of the design reference: 53 fixed 6px cells plus gaps and the
+   weekday gutter overflow a 430px phone. Cells stay square via
+   aspect-ratio so the grid fills whatever width it is given. */
+
+.year-accum-head,
+.year-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.year-since {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.year-accum { padding-bottom: 20px; border-bottom: var(--hair); }
+.year-accum-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.year-big {
+  font-family: var(--font-head);
+  font-size: 56px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.86;
+  color: var(--text);
+}
+.year-accum-side { text-align: right; }
+.year-accum-split {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* Selected-day readout */
+.year-detail {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px 15px;
+  margin: 18px 0;
+  color: var(--text);
+  font-family: inherit;
+}
+.year-detail.is-tappable { cursor: pointer; }
+.year-detail.is-tappable:active { opacity: 0.8; }
+.year-detail-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.year-detail-label,
+.year-detail-meta {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.year-detail-label.is-live { color: var(--accent); }
+.year-detail-body {
+  font-family: var(--font-hand);
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--text);
+  margin-top: 5px;
+}
+
+.year-block { padding: 20px 0 16px; border-bottom: var(--hair); }
+.year-block-title { font-family: var(--font-hand); font-size: 19px; color: var(--text); }
+
+.year-grid-col { min-width: 0; }
+.year-ticks {
+  display: grid;
+  grid-template-columns: 12px repeat(53, minmax(0, 1fr));
+  gap: 2px;
+  height: 12px;
+  margin-bottom: 2px;
+}
+.year-tick {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.year-grid {
+  display: grid;
+  grid-template-columns: 12px repeat(53, minmax(0, 1fr));
+  grid-template-rows: repeat(7, auto);
+  grid-auto-flow: column;
+  gap: 2px;
+}
+.year-dow {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  line-height: 1;
+  color: var(--text-dim);
+  align-self: center;
+}
+.yc { display: block; aspect-ratio: 1; border-radius: 1px; background: var(--rail); }
+.yc-void { background: transparent; }
+.yc-rest { background: var(--rail); }
+.yc-mat { background: var(--mat); }
+.yc-support { background: var(--support); }
+.yc-both { background: linear-gradient(180deg, var(--mat) 50%, var(--support) 50%); }
+.yc-today { outline: 1px solid var(--text-dim); outline-offset: 1px; }
+.yc-selected { outline: 1px solid var(--accent); outline-offset: 1px; }
+.yc[data-day] { cursor: pointer; }
+
+.year-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+.year-summary-lead { color: var(--text-muted); }
+
+.year-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 16px 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.year-legend span { display: flex; align-items: center; gap: 6px; }
+.year-legend .yc { width: 7px; height: 7px; aspect-ratio: auto; flex: none; }
+.year-legend .is-live, .year-legend span.is-live { color: var(--accent); }
+
+.year-stats { padding-bottom: 8px; }
+.year-stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 13px 0;
+  border-top: var(--hair);
+}
+.year-stat-val { font-size: 14px; color: var(--text); }
+.year-stat-val em {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-left: 6px;
+}
+
+/* "See all" reads as a link, not a button — it sits inside a heading row. */
+.text-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-dim);
+}
+
+/* Position chips in a fixed 3-column grid rather than ragged wrap. */
+.chip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.chip { padding: 8px 6px; text-align: center; line-height: 1.25; }

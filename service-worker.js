@@ -1,7 +1,7 @@
 // ── Mat Log Service Worker ──
 // Update this version number every time you deploy
 // This is what forces the home screen app to refresh
-const CACHE_VERSION = 'matlog-v20260902201601';
+const CACHE_VERSION = 'matlog-v20260902202155';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Files to cache for offline/fast loading
@@ -21,6 +21,7 @@ const STATIC_FILES = [
   '/js/coach.js',
   '/js/focus.js',
   '/js/progress.js',
+  '/js/year.js',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

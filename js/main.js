@@ -15,6 +15,7 @@ import { initLiftingForm, initCardioForm, wireSupport, startMinimumSession } fro
 import { initCoachView, wireCoach } from './coach.js';
 import { initFocusView, wireFocus, renderFocusCard } from './focus.js';
 import { initProgressView, wireProgress } from './progress.js';
+import { initYearView, wireYear } from './year.js';
 
 // ── View registry ──
 // navigate() dispatches through this, which is what lets ui.js stay
@@ -27,6 +28,7 @@ registerView('log-lifting', initLiftingForm);
 registerView('log-mat', initMatForm);
 registerView('log-cardio', initCardioForm);
 registerView('focus', initFocusView);
+registerView('year', initYearView);
 // 'detail' needs no initialiser — openDetail() fills it before navigating.
 
 // The dashboard's focus card, owned by focus.js.
@@ -91,6 +93,7 @@ wireSupport();
 wireCoach();
 wireFocus();
 wireProgress();
+wireYear();
 
 // ── Auth state ──
 watchAuth((user) => {
