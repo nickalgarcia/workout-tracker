@@ -1,25 +1,57 @@
 /* ── Variables ── */
 :root {
-  --bg:         #0f0f0f;
-  --surface:    #1a1a1a;
-  --surface2:   #242424;
-  --border:     #2e2e2e;
-  --text:       #f0f0f0;
-  --text-muted: #777;
+  /* Surfaces — warm graphite, four steps. */
+  --bg:         #100f0e;
+  --surface:    #1a1917;
+  --surface2:   #232120;
+  --border:     #2a2725;
+  --rail:       #232120;   /* empty bar/track fill */
+
+  /* Text — three steps. #777 on --surface failed contrast at ~3.4:1. */
+  --text:       #f0ece7;
+  --text-muted: #9a938c;   /* readable secondary — labels, values */
+  --text-dim:   #6a635d;   /* metadata, units, inactive nav */
+
+  /* Accent — RESERVED for live/active/current state only.
+     Never a button fill, never a badge, never a session type. */
   --accent:     #c8f04a;
-  --accent-dim: rgba(200,240,74,0.12);
-  --lifting:    #c8f04a;
-  --bjj:        #4ac8f0;
-  --bjj-dim:    rgba(74,200,240,0.12);
-  --cardio:     #fb923c;
-  --cardio-dim: rgba(251,146,60,0.12);
-  --danger:     #f04a4a;
-  --radius:     12px;
-  --radius-sm:  8px;
-  --nav-h:      64px;
-  --header-h:   56px;
-  --font-head:  'Syne', sans-serif;
-  --font-mono:  'DM Mono', monospace;
+  --accent-dim: rgba(200,240,74,0.14);
+
+  /* Session hues. --bjj/--lifting/--cardio stay as aliases so no
+     existing selector breaks; lifting vs cardio reads from the label. */
+  --mat:         #7fa8ad;
+  --mat-dim:     rgba(127,168,173,0.13);
+  --mat-quiet:   #4d5f5e;   /* faded/stale bar fill */
+  --support:     #b39a72;
+  --support-dim: rgba(179,154,114,0.13);
+  --bjj:        var(--mat);
+  --bjj-dim:    var(--mat-dim);
+  --lifting:    var(--support);
+  --cardio:     var(--support);
+  --cardio-dim: var(--support-dim);
+
+  /* Readiness 1–5 — a lightness ramp, NOT red-to-green.
+     Low readiness is not an error and must not read as one. */
+  --r1: #3b4247;
+  --r2: #4e5a61;
+  --r3: #65757e;
+  --r4: #7f949f;
+  --r5: #9cb7c4;
+
+  --danger:     #d1584f;
+
+  /* Geometry — instrument, not card deck. */
+  --radius:     4px;
+  --radius-sm:  3px;
+  --nav-h:      56px;
+  --header-h:   44px;
+  --hair:       1px solid var(--border);
+
+  /* Type — Archivo for numbers and UI, DM Mono for labels,
+     Newsreader for anything the user wrote. Syne is dropped. */
+  --font-head:  'Archivo', system-ui, sans-serif;
+  --font-mono:  'DM Mono', ui-monospace, monospace;
+  --font-hand:  'Newsreader', Georgia, serif;
 }
 
 /* ── Reset ── */
@@ -28,7 +60,10 @@ html, body { height: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-mono);
+  /* Archivo is the default so every numeral gets tabular figures and
+     stops jittering as values update. Labels opt into mono explicitly. */
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -101,13 +136,6 @@ body {
   font-weight: 800;
   color: var(--text);
   line-height: 1.2;
-}
-.card-label {
-  font-family: var(--font-head);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-  display: block;
 }
 
 .section-header {
@@ -1448,3 +1476,348 @@ select.field-input option { background: var(--surface2); }
   line-height: 1;
   cursor: pointer;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   INSTRUMENT PANEL REFRESH — Stage 1
+
+   Component skins layered over the rules above. Appended rather than
+   merged in place so the whole refresh can be reverted by deleting
+   from this marker down. Tokens, body and #page-title were replaced
+   in place at the top of this file.
+
+   Stage 2 (full-bleed rows, .view padding: 0) is not applied yet —
+   it needs a visual pass on every screen.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Header — the screen name stops being a lime wordmark and becomes
+   a quiet mono breadcrumb. Accent leaves the header entirely. ── */
+#page-title {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.back-btn { color: var(--text-muted); font-size: 18px; }
+
+/* ── One label voice everywhere: mono, uppercase, tracked ── */
+.field-label,
+.detail-section-title,
+.progress-section-title,
+.section-header h2 {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.stat-label,
+.detail-set-label,
+.detail-meta-item span,
+.coverage-label,
+.week-label,
+.problem-meta,
+.coach-meta {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ── Anything the user WROTE gets the serif. This is the whole idea:
+   your words look like a notebook, the numbers stay a gauge. ── */
+.problem-text,
+.detail-notes,
+.theme-phrase,
+.focus-card-title,
+.coach-insight-body,
+.chat-msg-assistant,
+.empty-state,
+.welcome-text {
+  font-family: var(--font-hand);
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--text);
+  text-wrap: pretty;
+}
+.theme-phrase { font-size: 18px; line-height: 1.3; }
+.detail-notes { font-size: 18px; color: var(--text-muted); }
+.welcome-title {
+  font-family: var(--font-hand);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+.greeting { font-family: var(--font-hand); font-size: 21px; color: var(--text); }
+.week-balance { font-family: var(--font-hand); font-size: 18px; color: var(--text-muted); }
+.focus-active-title, .focus-past-title, .focus-form-heading {
+  font-family: var(--font-hand);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.focus-active-desc, .focus-past-desc {
+  font-family: var(--font-hand);
+  font-size: 17px;
+  color: var(--text-muted);
+}
+
+/* ── Numbers — the largest type on any screen is always data ── */
+.stat-num, .focus-stat-num {
+  font-family: var(--font-head);
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 0.95;
+  color: var(--text);
+}
+.stat-strip {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+  border-top: var(--hair);
+  border-bottom: var(--hair);
+}
+.stat-tile {
+  flex: 1;
+  padding: 18px 16px;
+  background: none;
+  border: none;
+  border-right: var(--hair);
+  border-radius: 0;
+}
+.stat-tile:last-child { border-right: none; }
+
+/* ── Session cards become rows ── */
+.session-list { gap: 0; }
+.session-card {
+  background: none;
+  border: none;
+  border-bottom: var(--hair);
+  border-radius: 0;
+  padding: 14px 0;
+}
+.session-card:hover { background: none; border-color: var(--border); }
+.session-card:last-child { border-bottom: none; }
+.session-card-type { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; }
+.session-card-date { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+.session-card-summary { font-size: 14px; color: var(--text-muted); }
+.session-card-right { color: var(--text-dim); font-size: 15px; }
+
+/* ── Buttons stay GREY. Being tappable is not a reason to be accent. ── */
+.primary-log-btn,
+.save-btn,
+.coach-btn {
+  background: var(--surface2);
+  border: var(--hair);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.primary-log-btn:active,
+.save-btn:active,
+.coach-btn:not(:disabled):active { opacity: 0.8; transform: none; }
+.secondary-log-btn,
+.add-btn, .add-set-btn, .notes-toggle, .coach-refresh-btn,
+.focus-btn-secondary, .user-menu-signout, .text-btn {
+  background: none;
+  border: var(--hair);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.add-btn:hover, .add-set-btn:hover, .coach-refresh-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+.focus-btn-primary {
+  background: var(--surface2);
+  border: var(--hair);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+/* ── Inputs ── */
+.field-input, .field-textarea, .exercise-name-input, .set-input,
+.technique-input, .technique-link-input, .exercise-select, .chat-input {
+  background: var(--surface);
+  border: var(--hair);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-head);
+}
+.field-textarea, .technique-input { font-family: var(--font-hand); font-size: 18px; }
+.field-input:focus, .field-textarea:focus, .exercise-name-input:focus,
+.set-input:focus, .technique-input:focus, .chat-input:focus {
+  border-color: var(--text-muted);
+  outline: none;
+}
+.technique-input:focus, .technique-link-input:focus { border-color: var(--mat); }
+
+/* ── Position chips — selected IS a live state, so accent is correct ── */
+.chip {
+  border: var(--hair);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  min-height: 44px;
+}
+.chip.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* ── Readiness — each step wears its own ramp colour when chosen, so
+   the scale reads as a scale rather than five lime buttons. ── */
+.readiness-row { gap: 6px; }
+.readiness-btn {
+  min-height: 48px;
+  border: var(--hair);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-dim);
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 500;
+}
+.readiness-btn.active { border-color: transparent; }
+.readiness-btn[data-value="1"].active { background: var(--r1); color: var(--text); }
+.readiness-btn[data-value="2"].active { background: var(--r2); color: var(--text); }
+.readiness-btn[data-value="3"].active { background: var(--r3); color: var(--bg); }
+.readiness-btn[data-value="4"].active { background: var(--r4); color: var(--bg); }
+.readiness-btn[data-value="5"].active { background: var(--r5); color: var(--bg); }
+
+/* ── Tabs, ranges and nav share one active idiom: a 2px accent top
+   rule plus accent label, so "where am I" looks the same everywhere. ── */
+.tab-row { gap: 0; margin-bottom: 0; border-bottom: var(--hair); }
+.tab-btn {
+  flex: 1;
+  height: 42px;
+  background: none;
+  border: none;
+  border-top: 2px solid transparent;
+  border-radius: 0;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.tab-btn.active { background: none; border-top-color: var(--accent); color: var(--accent); }
+.range-toggle { gap: 6px; }
+.range-btn {
+  padding: 5px 10px;
+  background: var(--surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.range-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* ── Bars: square tracks, mat hue. A stale series uses --mat-quiet,
+   not opacity — a faded track reads as missing data, not as zero. ── */
+.coverage-track { border-radius: 0; background: var(--rail); }
+.coverage-bar, .cardio-bar { border-radius: 0; }
+.coverage-bar { background: var(--mat); }
+.cardio-bar { background: var(--support); }
+.coverage-count, .theme-count {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.coverage-zero { opacity: 1; }
+.coverage-zero .coverage-label,
+.coverage-zero .coverage-count { color: var(--text-dim); }
+
+/* ── Problem log ── */
+.problem-row { padding: 14px 0; border-bottom: var(--hair); }
+.problem-row:last-child { border-bottom: var(--hair); }
+.theme-row { padding: 10px 0; border-top: var(--hair); align-items: center; }
+.theme-list { border: none; background: none; padding: 0; }
+
+/* ── Focus card — the one place accent belongs on the dashboard,
+   because the attempt rate is a live number. ── */
+.focus-card {
+  background: none;
+  border: var(--hair);
+  border-left: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+.focus-card-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+.focus-card-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+
+/* ── Coach — a readout, not chat bubbles ── */
+.coach-insight {
+  background: none;
+  border: none;
+  border-top: var(--hair);
+  border-radius: 0;
+  padding: 16px 0;
+}
+.coach-advice { background: none; border: none; padding: 0; }
+.chat-msg { border-radius: var(--radius-sm); }
+.chat-msg-user { background: var(--surface2); font-family: var(--font-hand); font-size: 18px; }
+.chat-msg-assistant { background: none; padding-left: 0; }
+.coach-spinner { border-top-color: var(--accent); }
+
+/* ── Bottom nav ── */
+#bottom-nav { background: var(--bg); border-top: var(--hair); }
+.nav-btn {
+  border-top: 2px solid transparent;
+  margin-top: -1px;
+  color: var(--text-dim);
+  gap: 5px;
+}
+.nav-btn.active { border-top-color: var(--accent); color: var(--accent); }
+.nav-icon { font-size: 18px; }
+.nav-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; }
+
+/* ── Toast, banner, misc ── */
+.toast, .update-banner { border-radius: var(--radius-sm); }
+.toast {
+  background: var(--surface2);
+  border: var(--hair);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.pr-badge {
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+}
+.progress-table th {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.progress-table td { font-family: var(--font-head); border-bottom: var(--hair); }
+.auth-logo { font-family: var(--font-head); font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
