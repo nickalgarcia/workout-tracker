@@ -2028,3 +2028,124 @@ select.field-input option { background: var(--surface2); }
 .update-banner { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 26px); }
 
 .user-btn { display: flex; align-items: center; justify-content: center; padding: 6px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   INSTRUMENT PANEL REFRESH — Stage 2: full-bleed rows
+
+   The view drops its side padding and every block pays for its own.
+   The point is that hairline rules run edge to edge while the text
+   inside them stays inset — a rule that stops 16px short reads as a
+   card border, which is the thing Stage 1 spent its effort removing.
+
+   Landscape and notched devices are handled by max()ing the inset
+   against the safe-area value, the same way .view did before.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --pad-l: max(18px, env(safe-area-inset-left));
+  --pad-r: max(18px, env(safe-area-inset-right));
+  /* Width for anything inset by margin rather than padding. `width: auto`
+     is not usable here: on a form control it shrink-wraps to the content
+     instead of filling, so a full-width button collapses to its label. */
+  --content-w: calc(100% - var(--pad-l) - var(--pad-r));
+}
+
+.view {
+  padding: 20px 0;
+}
+
+/* Blocks that own their horizontal padding. Anything with a border in
+   this list now draws that border the full width of the screen. */
+.dashboard-hero,
+.week-balance,
+.section-header,
+.secondary-log-row,
+.form-section,
+.form-row,
+.progress-section,
+.detail-header,
+.detail-section,
+.coach-intro,
+.coach-meta,
+.coach-advice,
+.coach-chat,
+.welcome-state,
+.empty-state,
+.loading-state,
+.progress-empty,
+.theme-none,
+.session-card,
+.problem-row,
+.theme-row,
+.coverage-row,
+.week-row,
+.coach-insight,
+.focus-active,
+.focus-form,
+.focus-history,
+.year-accum,
+.year-block,
+.year-legend,
+.year-stat-row {
+  padding-left: var(--pad-l);
+  padding-right: var(--pad-r);
+}
+
+/* The form-row lays two fields side by side, so its children must not
+   double up on the inset their parent already pays. */
+.form-row .form-section { padding-left: 0; padding-right: 0; }
+
+/* Strips and tab rows are edge to edge themselves; their cells carry
+   the inset so the dividing rules reach the screen edges. */
+.stat-strip { padding: 0; }
+.stat-tile:first-child { padding-left: var(--pad-l); }
+.stat-tile:last-child { padding-right: var(--pad-r); }
+.tab-row { padding: 0; }
+
+/* Everything inset by margin rather than padding: full-width controls and
+   the blocks that are genuinely cards rather than rows. All need the
+   explicit width — several are <button>, where width:auto shrink-wraps. */
+.primary-log-btn,
+.save-btn,
+.coach-btn,
+.delete-btn,
+.focus-card,
+.year-detail,
+.nudge,
+.update-banner {
+  margin-left: var(--pad-l);
+  margin-right: var(--pad-r);
+  width: var(--content-w);
+}
+/* Past focuses are rows inside an already-inset history block. */
+.focus-history .focus-past { margin-left: 0; margin-right: 0; width: auto; }
+
+/* Session rows sit in lists that must not add their own inset on top. */
+.session-list,
+.problem-list,
+.coverage-list,
+.week-list,
+#focus-content,
+#progress-content,
+#year-content,
+#coach-output { padding-left: 0; padding-right: 0; }
+
+/* Position labels are the POSITIONS constant verbatim — they cannot be
+   abbreviated, since the strings are what is stored on every session.
+   "Closed guard (bottom)" needs ~144px at the shared 0.12em label
+   tracking, and a 40% column gives 143. It fit by one pixel before the
+   rows took on their own padding. Widen the column and ease the
+   tracking on these two label types only. */
+.coverage-label { flex: 0 0 46%; letter-spacing: 0.06em; }
+.week-label { letter-spacing: 0.06em; }
+
+/* .hidden is `visibility: hidden` globally, which keeps the element in
+   the layout. That is right for things that toggle in place, but these
+   two are collapsed sections: the focus field when no focus is set, and
+   the notes textarea before "+ Add notes" is tapped. Left as
+   visibility-only they cost 65px and 90px of dead scroll — and the notes
+   gap is on the page every single time the form is opened.
+   Same targeted-override pattern as #auth-screen, .user-menu and
+   .coach-chat, which already do this. */
+#mat-focus-section.hidden,
+#mat-notes.hidden { display: none; }
