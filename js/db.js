@@ -49,10 +49,19 @@ const db = getFirestore(app);
 // and the onboarding flow that populated it. Edit by hand when it changes.
 export const PROFILE = {
   name: 'Nick',
+  // A birthdate rather than an age: age is derived wherever it is needed,
+  // so it stays correct without anyone remembering to edit this file.
+  // Same reasoning for startedTraining — time on the mat is computed, not
+  // written down and left to rot.
+  born: '1987-05-28',
   startedTraining: '2025-01',
-  belt: 'white',          // update by hand when this changes
+  belt: 'white',          // approaching blue. Rarely trains gi, so this
+                          // signals less than startedTraining does.
   style: 'no-gi',
-  bodyType: 'smaller and lighter than most training partners',
+  bodyType: 'Lighter than everyone in the room, and older than most of it. '
+          + 'The younger majority are faster and more athletic; the few '
+          + 'training partners his own age are heavier and stronger. Neither '
+          + 'speed nor strength is available to him against either group.',
   goals: 'recreational — fun, fitness, community. Wants to build an offensive guard game.',
   weeklyTargets: { mat: 3, support: 2 }
 };

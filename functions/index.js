@@ -6,11 +6,45 @@ const MAX_TOKENS = 8000;
 
 // ── Context building ───────────────────────────────────────────────────
 
+/**
+ * Age from a birthdate, so it stays right without anyone editing a file.
+ * Subtracts a year when this year's birthday has not landed yet.
+ */
+function ageFrom(born, now = new Date()) {
+  if (!born) return null;
+  const [y, m, d] = born.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  let age = now.getFullYear() - y;
+  const month = now.getMonth() + 1;
+  const hadBirthday = month > m || (month === m && now.getDate() >= d);
+  return hadBirthday ? age : age - 1;
+}
+
+/** Whole months since a 'YYYY-MM' start, for the same reason. */
+function monthsSince(yyyymm, now = new Date()) {
+  if (!yyyymm) return null;
+  const [y, m] = yyyymm.split("-").map(Number);
+  if (!y || !m) return null;
+  return Math.max(0, (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m));
+}
+
+function trainingFor(months) {
+  if (months === null) return null;
+  const years = Math.floor(months / 12), rem = months % 12;
+  if (months < 12) return `${months} months`;
+  if (!rem) return `${years} year${years === 1 ? "" : "s"}`;
+  return `${years} year${years === 1 ? "" : "s"} ${rem} months`;
+}
+
 function profileBlock(profile) {
   const p = profile || {};
+  const age = ageFrom(p.born);
+  const months = monthsSince(p.startedTraining);
   const lines = [
     p.name && `Name: ${p.name}`,
-    p.startedTraining && `Started training: ${p.startedTraining}`,
+    age !== null && `Age: ${age}`,
+    months !== null &&
+      `Training since ${p.startedTraining} — ${trainingFor(months)} on the mat`,
     p.belt && `Belt: ${p.belt}`,
     p.style && `Style: ${p.style}`,
     p.bodyType && `Build: ${p.bodyType}`,
@@ -90,7 +124,7 @@ function coverageBlock(vocabulary, sessions) {
 function buildSystemPrompt(body) {
   const { profile, focus, matSessions, support30, themes, positionVocabulary } = body;
 
-  return `You are a no-gi jiu-jitsu coach. Your athlete is a recreational hobbyist who started training in January 2025. He is smaller and lighter than most of his training partners. He trains for fun, fitness and community — not competition — and has not asked to compete.
+  return `You are a jiu-jitsu coach. Everything that is true of your athlete is in the Athlete section below — read it rather than assuming a default student. He trains recreationally and has not asked to compete.
 
 ## Athlete
 
@@ -127,7 +161,7 @@ Work through these in order. Earlier priorities matter more; do not lead with a 
 1. **Is he getting to his stated focus?** This is the single most important question. Look at the attempt rate and at which sessions he did and did not reach it. If the rate is low, the useful question is what is getting in the way, not whether he should try harder.
 2. **What does the problem log say he should drill next?** The "what beat me" entries are his curriculum. Name the specific problem and the specific thing to drill for it.
 3. **Position gaps.** Which positions in the vocabulary is he never tagging? A position at zero over this many sessions is a gap worth naming — but check whether it is a real gap or just how his gym runs class before making it a priority.
-4. **Recovery signals.** Read readiness alongside session density. Several low-readiness sessions close together, or readiness trending down, means something. Say so plainly.
+4. **Recovery signals.** Read readiness alongside session density, and weigh both against his age — three mat sessions in five days asks more of a body in its late thirties than of the twenty-somethings he trains with. Several low-readiness sessions close together, or readiness trending down, means something. Say so plainly.
 5. **Support work consistency.** Mention this last, and frame it only as what supports his mat game — grip, posterior chain, and holding structure against bigger partners. Never as a goal of its own.
 
 # Rules
@@ -136,7 +170,7 @@ Work through these in order. Earlier priorities matter more; do not lead with a 
 - **Never give advice that would apply to any jiu-jitsu student.** Generic advice is worse than no advice here; he has a log precisely so he does not have to read generalities.
 - **Do not push competition, and do not push intensity he has not asked for.** He trains for fun and community. Suggestions should fit a recreational schedule.
 - **Do not tell him to be more consistent** unless the data shows a real drop, and if it does, say what the data shows rather than exhorting him.
-- Being smaller than his partners is context for technique selection — structure, frames, angles, not strength battles. It is not a limitation to sympathise with.
+- His build is context for technique selection, not something to sympathise with. Read it carefully: he gives up speed to the younger half of the room and size to his own age group, so neither "move faster" nor "grip harder" is advice he can act on. Everything has to come from structure, frames, angles and timing.
 - **End with two or three concrete things to try in his next session.** Concrete means a named position, entry or drill he could walk in and do. Not a lecture, not a training philosophy.
 
 Keep the whole response short enough to read on a phone between rounds.`;
