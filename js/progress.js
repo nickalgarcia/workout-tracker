@@ -48,6 +48,22 @@ function significantWords(text) {
 }
 
 /**
+ * Does `text` contain `phrase`, under exactly the normalisation
+ * groupThemes uses to find phrases in the first place? A fresh
+ * includes() here would let a row read 3 of 8 while the theme count
+ * above it says 6.
+ */
+export function themeAppearsIn(text, phrase) {
+  const words = significantWords(text);
+  const parts = phrase.split(' ');
+  if (parts.length === 1) return words.includes(parts[0]);
+  for (let i = 0; i <= words.length - parts.length; i++) {
+    if (parts.every((part, j) => words[i + j] === part)) return true;
+  }
+  return false;
+}
+
+/**
  * Recurring themes across the problem log.
  * Returns [] when there is not enough signal to group honestly.
  */
@@ -71,16 +87,34 @@ export function groupThemes(entries) {
     .map(([phrase, ids]) => ({ phrase, count: ids.size, ids }))
     .filter(t => t.count >= 2);
 
-  // Prefer phrases over their component words. "posture break" and
-  // "posture" and "break" would otherwise be three rows saying one thing,
-  // and the phrase is the readable label. The pair's own count is reported
-  // honestly, so it can be lower than the word's — that is the cost of
-  // refusing to infer that "break his posture" and "posture break" are the
-  // same thing. They are not grouped, by design.
-  const pairs = scored.filter(t => t.phrase.includes(' '));
-  const kept = scored.filter(t =>
-    t.phrase.includes(' ') || !pairs.some(p => p.phrase.split(' ').includes(t.phrase))
-  );
+  // Two passes, both dumb enough to explain in a sentence.
+  //
+  // 1. Phrases matching exactly the same entries are one theme said two
+  //    ways — keep the longest, which is the most specific label. This
+  //    collapses "knee"/"shield"/"knee shield" to "knee shield".
+  //
+  // 2. Then drop a phrase when another surviving phrase shares a word
+  //    with it AND appears in strictly more entries. This is the fix for
+  //    a real bug: the old rule let a phrase suppress its own component
+  //    words unconditionally, so "overhook held" (2 entries) hid
+  //    "overhook" (4). Reporting the smaller number is not conservative
+  //    here — on the what-worked side it makes something look less
+  //    reliable than the log actually says it is.
+  const byEntrySet = new Map();
+  scored.forEach(t => {
+    const key = [...t.ids].sort((a, b) => a - b).join(',');
+    const held = byEntrySet.get(key);
+    if (!held || t.phrase.length > held.phrase.length) byEntrySet.set(key, t);
+  });
+  const distinct = [...byEntrySet.values()];
+
+  const kept = distinct.filter(t => {
+    const words = t.phrase.split(' ');
+    return !distinct.some(other =>
+      other !== t &&
+      other.count > t.count &&
+      other.phrase.split(' ').some(w => words.includes(w)));
+  });
 
   return kept
     .sort((a, b) => b.count - a.count || b.phrase.length - a.phrase.length)
@@ -102,10 +136,10 @@ function headlineStats(matSessions) {
     <div class="stat-strip">
       <div class="stat-tile"><span class="stat-num">${last7}</span><span class="stat-label">mat · 7 days</span></div>
       <div class="stat-tile"><span class="stat-num">${last30}</span><span class="stat-label">mat · 30 days</span></div>
-      <div class="stat-tile">
+      <button class="stat-tile is-tappable" data-navigate="readiness">
         <span class="stat-num">${avg ?? '—'}</span>
         <span class="stat-label">avg readiness${rated.length ? ` · last ${rated.length}` : ''}</span>
-      </div>
+      </button>
     </div>`;
 }
 
@@ -145,6 +179,73 @@ function problemLog(matSessions) {
     <div class="progress-section">
       <div class="progress-section-title">Problem log</div>
       ${themeBlock}
+      <div class="problem-list">${list}</div>
+    </div>`;
+}
+
+/**
+ * What worked, ranked by reliability rather than frequency.
+ *
+ * A count is the wrong statistic here: "this worked 7 times" across a
+ * year is not the same claim as "this worked in 6 of the last 8
+ * sessions", and only the second says it is becoming yours. Each row is
+ * eight marks — the last eight mat sessions, oldest on the left, filled
+ * where the theme shows up in that session's `worked`.
+ */
+function workedLog(matSessions) {
+  const entries = matSessions
+    .filter(s => s.worked && s.worked.trim())
+    .map(s => ({ beat: s.worked.trim(), date: s.date, positions: s.positions || [] }));
+
+  if (entries.length === 0) {
+    return `
+      <div class="progress-section">
+        <div class="progress-empty">Nothing logged yet. Fill in "what worked" after a session and the things that are becoming reliable collect here.</div>
+      </div>`;
+  }
+
+  // getSessions() is newest-first; the marks read oldest on the left.
+  const last8 = matSessions.slice(0, 8).reverse();
+  const themes = groupThemes(entries);
+
+  const rows = themes.map(t => {
+    const marks = last8.map(s => themeAppearsIn(s.worked || '', t.phrase));
+    const hits = marks.filter(Boolean).length;
+    // Its only appearance is the oldest session in the window — it was
+    // working and has stopped showing up. The mirror of the problem
+    // log's "quiet" tag.
+    const faded = hits === 1 && marks[0];
+    return `
+      <div class="worked-row${faded ? ' is-faded' : ''}">
+        <div class="worked-phrase">${escapeHtml(t.phrase)}${faded ? ' <span class="worked-tag">FADED</span>' : ''}</div>
+        <div class="worked-marks">
+          ${marks.map(m => `<i class="worked-mark${m ? ' is-hit' : ''}"></i>`).join('')}
+        </div>
+        <div class="worked-score">${hits}/${last8.length}</div>
+      </div>`;
+  }).join('');
+
+  const list = entries.map(e => `
+    <div class="problem-row">
+      <div class="problem-text">${escapeHtml(e.beat)}</div>
+      <div class="problem-meta">
+        ${formatDate(e.date)}${e.positions.length ? ' · ' + e.positions.map(escapeHtml).join(' · ') : ''}
+      </div>
+    </div>`).join('');
+
+  return `
+    <div class="progress-section">
+      ${themes.length ? `
+        <div class="progress-section-head">
+          <div class="progress-section-title">Becoming reliable</div>
+          <div class="year-since">LAST ${last8.length} SESSION${last8.length === 1 ? '' : 'S'}</div>
+        </div>
+        <div class="worked-legend">EACH MARK IS ONE SESSION — FILLED WHERE IT LANDED</div>
+        ${rows}`
+        : `<div class="theme-none">Not enough repeated wording to group yet — the full list is below.</div>`}
+    </div>
+    <div class="progress-section">
+      <div class="progress-section-title">Every entry · newest first</div>
       <div class="problem-list">${list}</div>
     </div>`;
 }
@@ -277,6 +378,7 @@ export async function renderExerciseTable() {
 // ── View ──
 
 let tab = 'mat';
+let logTab = 'beat';
 let coverageDays = 30;
 
 export async function renderProgressView() {
@@ -293,7 +395,12 @@ export async function renderProgressView() {
       <button class="tab-btn${tab === 'support' ? ' active' : ''}" data-tab="support">Support</button>
     </div>
     ${tab === 'mat'
-      ? problemLog(matSessions) + positionCoverage(matSessions, coverageDays)
+      ? `<div class="tab-row is-sub">
+           <button class="tab-btn${logTab === 'beat' ? ' active' : ''}" data-log-tab="beat">What beat me</button>
+           <button class="tab-btn${logTab === 'worked' ? ' active' : ''}" data-log-tab="worked">What worked</button>
+         </div>
+         ${logTab === 'beat' ? problemLog(matSessions) : workedLog(matSessions)}
+         ${positionCoverage(matSessions, coverageDays)}`
       : supportWork(sessions)}
   `;
 }
@@ -307,6 +414,8 @@ export function wireProgress() {
   document.getElementById('progress-content').addEventListener('click', (e) => {
     const tabBtn = e.target.closest('[data-tab]');
     if (tabBtn) { tab = tabBtn.dataset.tab; renderProgressView(); return; }
+    const logBtn = e.target.closest('[data-log-tab]');
+    if (logBtn) { logTab = logBtn.dataset.logTab; renderProgressView(); return; }
     const rangeBtn = e.target.closest('[data-range]');
     if (rangeBtn) { coverageDays = Number(rangeBtn.dataset.range); renderProgressView(); }
   });

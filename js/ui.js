@@ -89,13 +89,15 @@ export function selectToggle(btn, hiddenId) {
 
 // ── Navigation ──
 const TOP_LEVEL_VIEWS = ['dashboard', 'year', 'history', 'focus', 'progress', 'coach'];
+// 'readiness' is deliberately not top-level — it is reached from the
+// progress screen, so back should return there.
 const LOG_VIEWS = ['log-lifting', 'log-mat', 'log-cardio'];
 
 const TITLES = {
   'dashboard': 'MAT LOG', 'log-lifting': 'LOG LIFTING',
   'log-mat': 'LOG MAT SESSION', 'log-cardio': 'LOG CARDIO',
   'history': 'HISTORY', 'detail': 'SESSION', 'year': 'YEAR',
-  'focus': 'FOCUS', 'progress': 'PROGRESS',
+  'focus': 'FOCUS', 'progress': 'PROGRESS', 'readiness': 'READINESS',
   'coach': 'COACH'
 };
 

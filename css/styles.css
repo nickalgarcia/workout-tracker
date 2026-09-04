@@ -2149,3 +2149,110 @@ select.field-input option { background: var(--surface2); }
    .coach-chat, which already do this. */
 #mat-focus-section.hidden,
 #mat-notes.hidden { display: none; }
+
+/* ── What worked ── */
+.tab-row.is-sub .tab-btn { font-size: 10px; letter-spacing: 0.1em; }
+.worked-legend {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.worked-row {
+  display: grid;
+  grid-template-columns: 1fr 92px 40px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-top: var(--hair);
+}
+.worked-row:last-of-type { border-bottom: var(--hair); }
+.worked-phrase { font-family: var(--font-hand); font-size: 17px; line-height: 1.3; color: var(--text); }
+.worked-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--mat);
+}
+.worked-row.is-faded .worked-phrase { color: var(--text-muted); }
+.worked-marks { display: flex; gap: 3px; }
+.worked-mark { flex: 1; height: 14px; background: var(--rail); }
+.worked-mark.is-hit { background: var(--mat); }
+.worked-row.is-faded .worked-mark.is-hit { background: var(--mat-quiet); }
+.worked-score {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-align: right;
+}
+.worked-row.is-faded .worked-score { color: var(--text-dim); }
+
+/* ── Readiness ── */
+.stat-tile.is-tappable { cursor: pointer; text-align: left; font-family: inherit; }
+.readiness-hold {
+  font-family: var(--font-hand);
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--text);
+  text-wrap: pretty;
+  margin: 18px 0 14px;
+}
+.readiness-note {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+/* Row scale reuses .coverage-track, so only the label column differs. */
+.readiness-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: var(--hair); }
+.readiness-row:last-of-type { border-bottom: var(--hair); }
+.readiness-key {
+  flex: 0 0 76px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.readiness-swatch { width: 11px; height: 11px; flex: none; }
+.readiness-val {
+  flex: 0 0 46px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+}
+.readiness-row.is-empty .readiness-val,
+.readiness-row.is-empty .readiness-key { color: var(--text-dim); }
+
+/* Rounds chart. The value labels MUST live in their own grid row above
+   the track — inside the bar's flex column a label plus its gap eats
+   into the 78px and silently clamps every tall bar to the same height. */
+.rounds-labels,
+.rounds-axis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.rounds-labels span,
+.rounds-axis span {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.rounds-labels { margin-bottom: 7px; }
+.rounds-labels .is-best { color: var(--text); }
+.rounds-axis {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: var(--hair);
+}
+.rounds-axis span { font-size: 10px; color: var(--text-dim); }
+.rounds-track {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  align-items: end;
+  height: 78px;
+}
+.rounds-track i { display: block; width: 100%; }
