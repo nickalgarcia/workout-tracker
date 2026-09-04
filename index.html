@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Mat Log</title>
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192.png" />
@@ -38,7 +38,12 @@
       <div class="header-inner">
         <button id="back-btn" class="back-btn hidden" aria-label="Go back">&#8592;</button>
         <h1 id="page-title">MAT LOG</h1>
-        <button id="user-btn" class="user-btn">&#9711;</button>
+        <button id="user-btn" class="user-btn" aria-label="Account and sign out">
+          <svg viewBox="0 0 18 18" width="19" height="19" fill="none" stroke="currentColor"
+               stroke-width="1.25" stroke-linecap="round" aria-hidden="true">
+            <circle cx="9" cy="6.4" r="2.9"/><path d="M3.4 15.4c0-3.1 2.5-5 5.6-5s5.6 1.9 5.6 5"/>
+          </svg>
+        </button>
       </div>
     </header>
 

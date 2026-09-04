@@ -1988,3 +1988,43 @@ select.field-input option { background: var(--surface2); }
 /* Position chips in a fixed 3-column grid rather than ragged wrap. */
 .chip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .chip { padding: 8px 6px; text-align: center; line-height: 1.25; }
+
+/* ── Safe areas ──
+   viewport-fit=cover is required for env() to report anything, but it
+   also lets content run under the status bar and the home indicator.
+   Both edges have to be paid for together or one problem trades for
+   the other. The bottom inset matters most: the nav sat directly on
+   the home-indicator strip, so a tap near the middle of the bar was
+   landing on the system gesture rather than the button. */
+
+#header {
+  height: auto;
+  min-height: var(--header-h);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+#bottom-nav {
+  height: auto;
+  min-height: var(--nav-h);
+  /* 10px of its own breathing room on top of the system inset — on a
+     phone with no inset at all the bar still should not hug the edge. */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
+
+#main {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 26px);
+}
+
+.view { padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right)); }
+
+#auth-screen {
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.user-menu { top: calc(var(--header-h) + env(safe-area-inset-top, 0px)); }
+
+.update-banner { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 26px); }
+
+.user-btn { display: flex; align-items: center; justify-content: center; padding: 6px; }
